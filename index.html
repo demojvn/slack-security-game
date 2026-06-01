@@ -6,6 +6,22 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Slack Security" />
+  <!-- Content Security Policy: only allow resources from this page itself and trusted CDNs -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src https://fonts.gstatic.com;
+    img-src 'self' data:;
+    connect-src 'none';
+    form-action 'none';
+    base-uri 'self';
+    frame-ancestors 'none';
+  " />
+  <!-- Prevent clickjacking and sniffing -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta name="referrer" content="no-referrer" />
   <title>Slack Security Challenge</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <style>
@@ -1302,18 +1318,31 @@ const whatsNewData = {
 // ─────────────────────────────────────────────
 //  STATE
 // ─────────────────────────────────────────────
+function safeGetInt(key, fallback) {
+  try { const v = parseInt(localStorage.getItem(key)); return isFinite(v) ? v : fallback; }
+  catch { return fallback; }
+}
+function safeGetObj(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v && typeof v === 'object' ? v : fallback; }
+  catch { return fallback; }
+}
+function safeGetArr(key) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v.filter(i => typeof i === 'string') : []; }
+  catch { return []; }
+}
+
 let state = {
   currentCategory: null,
   currentCardIndex: 0,
-  mode: 'flashcard', // 'flashcard' | 'quiz'
+  mode: 'flashcard',
   score: 0,
   sessionCorrect: 0,
   sessionWrong: 0,
   sessionPoints: 0,
   quizAnswered: false,
-  totalScore: parseInt(localStorage.getItem('totalScore') || '0'),
-  catScores: JSON.parse(localStorage.getItem('catScores') || '{}'),
-  achievements: JSON.parse(localStorage.getItem('achievements') || '[]')
+  totalScore: safeGetInt('totalScore', 0),
+  catScores: safeGetObj('catScores', {}),
+  achievements: safeGetArr('achievements')
 };
 
 function saveState() {
@@ -1612,7 +1641,7 @@ function checkAchievements() {
 // ─────────────────────────────────────────────
 // ── Read state helpers ──
 function getReadItems() {
-  return JSON.parse(localStorage.getItem('newsRead') || '[]');
+  return safeGetArr('newsRead');
 }
 function saveReadItems(arr) {
   localStorage.setItem('newsRead', JSON.stringify(arr));
@@ -1719,7 +1748,7 @@ function renderWhatsNew() {
           </div>
           <div class="news-card-body">${item.summary}</div>
           <div class="news-card-footer">
-            <a class="news-source-link" href="${item.sourceUrl}" target="_blank" rel="noopener" style="border-top:none">
+            <a class="news-source-link" href="${item.sourceUrl}" target="_blank" rel="noopener noreferrer" style="border-top:none">
               📎 ${item.source} ↗
             </a>
             <button class="news-mark-btn ${isRead ? 'marked' : ''}" onclick="toggleRead('${item.id}')">
