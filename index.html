@@ -594,14 +594,21 @@
       color: var(--slack-green);
     }
     .news-unread-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 16px;
+      height: 16px;
       background: var(--slack-red);
       color: white;
-      border-radius: 10px;
-      padding: 1px 6px;
+      border-radius: 8px;
+      padding: 0 4px;
       font-size: 10px;
       font-weight: 700;
-      margin-left: 3px;
-      display: inline-block;
+      line-height: 16px;
+      text-align: center;
+      border: 2px solid white;
+      pointer-events: none;
     }
     .news-header-row {
       display: flex;
@@ -814,7 +821,7 @@
       <div class="nav-label">Topics</div>
     </div>
     <div class="nav-item" id="nav-whats-new" onclick="navTo('whats-new')">
-      <div class="nav-icon">🆕<span class="news-unread-badge" id="unread-badge" style="display:none"></span></div>
+      <div class="nav-icon" style="position:relative;display:inline-block">🆕<span class="news-unread-badge" id="unread-badge" style="display:none"></span></div>
       <div class="nav-label">What's New</div>
     </div>
     <div class="nav-item" id="nav-progress" onclick="navTo('progress')">
