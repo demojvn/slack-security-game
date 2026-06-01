@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#4A154B" />
+  <meta name="application-name" content="Slack Security" />
+  <title>Slack Security Challenge</title>
+
+  <!-- Android home screen icon manifest (inline) -->
+  <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Slack%20Security%20Challenge%22%2C%22short_name%22%3A%22Slack%20Sec%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%234A154B%22%2C%22theme_color%22%3A%22%234A154B%22%7D" />
+
+  <style>
+    /* ── Material Design 3 tokens ── */
+    :root {
+      --md-primary: #4A154B;
+      --md-primary-container: #FFDCFF;
+      --md-on-primary: #FFFFFF;
+      --md-on-primary-container: #35003A;
+      --md-secondary: #2BAC76;
+      --md-error: #E01E5A;
+      --md-warning: #ECB22E;
+      --md-info: #36C5F0;
+      --md-surface: #FFFBFF;
+      --md-surface-variant: #F2DEF2;
+      --md-surface-container: #F5EDF5;
+      --md-surface-container-high: #EDE1EC;
+      --md-on-surface: #1D1B1E;
+      --md-on-surface-variant: #4D444E;
+      --md-outline: #7F747F;
+      --md-outline-variant: #D0C3D0;
+      --md-ripple: rgba(74,21,75,0.12);
+      --md-elevation-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+      --md-elevation-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+      --md-elevation-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+      --nav-height: 80px;
+      --topbar-height: 64px;
+      --status-bar: env(safe-area-inset-top, 24px);
+      --nav-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Google Sans', Roboto, 'Noto Sans', sans-serif;
+      background: var(--md-surface);
+      color: var(--md-on-surface);
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      background: var(--md-surface);
+    }
+
+    /* ── Screens ── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: calc(var(--nav-height) + var(--nav-bottom));
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── Material Top App Bar ── */
+    .top-app-bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--md-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: calc(var(--status-bar) + 8px) 4px 8px 4px;
+      min-height: calc(var(--status-bar) + var(--topbar-height));
+      gap: 4px;
+    }
+    .top-app-bar.transparent {
+      background: transparent;
+      position: absolute;
+      width: 100%;
+    }
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: white;
+      font-size: 22px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+    }
+    .icon-btn:active { background: rgba(255,255,255,0.2); }
+    .top-app-bar-title {
+      flex: 1;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-app-bar-subtitle {
+      font-size: 12px;
+      opacity: 0.75;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── HOME ── */
+    #home {
+      background: linear-gradient(180deg, var(--md-primary) 0%, #7B2D8B 45%, var(--md-surface) 100%);
+      padding-bottom: calc(var(--nav-height) + var(--nav-bottom));
+      overflow-y: auto;
+    }
+    .home-hero {
+      padding: calc(var(--status-bar) + 48px) 24px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .home-app-icon {
+      width: 96px;
+      height: 96px;
+      background: white;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      margin-bottom: 20px;
+      box-shadow: var(--md-elevation-3);
+    }
+    .home-title {
+      font-size: 34px;
+      font-weight: 700;
+      color: white;
+      text-align: center;
+      line-height: 1.1;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+    .home-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.8);
+      text-align: center;
+      line-height: 1.5;
+      max-width: 300px;
+    }
+    .home-body {
+      padding: 0 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Material Cards ── */
+    .m3-card {
+      background: var(--md-surface);
+      border-radius: 16px;
+      box-shadow: var(--md-elevation-1);
+      overflow: hidden;
+    }
+    .m3-card.filled {
+      background: var(--md-surface-container);
+      box-shadow: none;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 16px 12px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+    .stat-card .num {
+      font-size: 28px;
+      font-weight: 700;
+      color: white;
+      line-height: 1;
+    }
+    .stat-card .lbl {
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── FAB-style CTA ── */
+    .extended-fab {
+      width: 100%;
+      background: white;
+      color: var(--md-primary);
+      border: none;
+      border-radius: 16px;
+      padding: 18px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: var(--md-elevation-2);
+      letter-spacing: 0.1px;
+      transition: box-shadow 0.2s, transform 0.1s;
+    }
+    .extended-fab:active {
+      transform: scale(0.98);
+      box-shadow: var(--md-elevation-1);
+    }
+    .extended-fab .fab-icon { font-size: 20px; }
+
+    /* ── CATEGORIES ── */
+    #categories { background: var(--md-surface); }
+    .cat-list {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Material 3 List Item */
+    .cat-item {
+      background: var(--md-surface);
+      border-radius: 16px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.15s;
+      overflow: hidden;
+      box-shadow: var(--md-elevation-1);
+      position: relative;
+    }
+    .cat-item:active { background: var(--md-surface-container); }
+    .cat-item-leading {
+      width: 64px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      border-radius: 16px 0 0 16px;
+    }
+    .cat-item-content {
+      flex: 1;
+      padding: 14px 8px 14px 12px;
+    }
+    .cat-item-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--md-on-surface);
+      letter-spacing: 0.1px;
+    }
+    .cat-item-sub {
+      font-size: 13px;
+      color: var(--md-on-surface-variant);
+      margin-top: 2px;
+    }
+    .cat-item-trailing {
+      padding: 0 16px 0 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .m3-chip {
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+      border-radius: 8px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .m3-chip.green { background: #C8F5E0; color: #0A5C38; }
+
+    /* ── GAME SCREEN ── */
+    #game { background: var(--md-surface); }
+
+    .progress-linear {
+      height: 4px;
+      background: var(--md-outline-variant);
+      width: 100%;
+    }
+    .progress-linear-fill {
+      height: 4px;
+      background: var(--md-primary-container);
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .game-body {
+      padding: 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    /* ── Segmented Button (mode toggle) ── */
+    .segmented-btn {
+      display: flex;
+      border: 1.5px solid var(--md-outline-variant);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .seg-opt {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--md-on-surface-variant);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+      letter-spacing: 0.1px;
+      border-right: 1.5px solid var(--md-outline-variant);
+    }
+    .seg-opt:last-child { border-right: none; }
+    .seg-opt.active {
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+      font-weight: 600;
+    }
+
+    /* ── Flashcard ── */
+    .card-3d {
+      width: 100%;
+      perspective: 1400px;
+    }
+    .card-inner {
+      width: 100%;
+      height: 210px;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+    .card-inner.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .card-front {
+      background: linear-gradient(135deg, var(--md-primary) 0%, #7B2D8B 100%);
+      box-shadow: var(--md-elevation-2);
+    }
+    .card-back {
+      background: var(--md-surface);
+      transform: rotateY(180deg);
+      box-shadow: var(--md-elevation-2);
+      border: 2px solid var(--md-outline-variant);
+    }
+    .card-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+    .card-front .card-eyebrow { color: rgba(255,255,255,0.65); }
+    .card-back .card-eyebrow { color: var(--md-on-surface-variant); }
+    .card-q { font-size: 16px; font-weight: 500; color: white; line-height: 1.45; }
+    .card-a { font-size: 14px; color: var(--md-on-surface); line-height: 1.55; }
+    .card-src { font-size: 11px; color: var(--md-on-surface-variant); margin-top: 10px; font-style: italic; }
+    .card-tap-hint {
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── Quiz ── */
+    .quiz-card {
+      background: var(--md-surface-container);
+      border-radius: 20px;
+      padding: 18px 16px;
+    }
+    .quiz-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--md-primary);
+      margin-bottom: 8px;
+    }
+    .quiz-q { font-size: 16px; font-weight: 500; line-height: 1.4; color: var(--md-on-surface); }
+
+    .options-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .option-btn {
+      background: var(--md-surface);
+      border: 1.5px solid var(--md-outline-variant);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 400;
+      cursor: pointer;
+      text-align: left;
+      color: var(--md-on-surface);
+      line-height: 1.4;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .option-btn:active:not(.disabled) { background: var(--md-surface-container); }
+    .option-btn.correct {
+      background: #C8F5E0;
+      border-color: var(--md-secondary);
+      color: #0A5C38;
+      font-weight: 500;
+    }
+    .option-btn.wrong {
+      background: #FFDDE8;
+      border-color: var(--md-error);
+      color: #7D0028;
+      font-weight: 500;
+    }
+    .option-btn.reveal-correct {
+      background: #C8F5E0;
+      border-color: var(--md-secondary);
+      color: #0A5C38;
+    }
+    .option-btn.disabled { cursor: default; }
+
+    .feedback-banner {
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+      display: none;
+    }
+    .feedback-banner.show { display: block; }
+    .feedback-banner.correct { background: #C8F5E0; color: #0A5C38; }
+    .feedback-banner.wrong   { background: #FFDDE8; color: #7D0028; }
+
+    /* ── Navigation row for flashcards ── */
+    .nav-row {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    /* ── Material Buttons ── */
+    .btn-filled {
+      flex: 1;
+      background: var(--md-primary);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.1px;
+      transition: box-shadow 0.2s, transform 0.1s;
+      box-shadow: var(--md-elevation-1);
+    }
+    .btn-filled:active { transform: scale(0.98); }
+
+    .btn-tonal {
+      flex: 1;
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+      border: none;
+      border-radius: 20px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.1px;
+      transition: transform 0.1s;
+    }
+    .btn-tonal:active { transform: scale(0.98); }
+
+    .btn-outlined {
+      flex: 1;
+      background: transparent;
+      color: var(--md-primary);
+      border: 1.5px solid var(--md-outline-variant);
+      border-radius: 20px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-outlined:active { background: var(--md-surface-container); transform: scale(0.98); }
+
+    .next-action-btn {
+      width: 100%;
+      background: var(--md-primary);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      margin-top: 4px;
+    }
+    .next-action-btn.show { display: block; }
+    .next-action-btn:active { opacity: 0.9; }
+
+    /* ── Score chip ── */
+    .score-chip {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ── RESULTS ── */
+    #results {
+      background: var(--md-surface);
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 32px 16px;
+      overflow-y: auto;
+    }
+    .results-emoji { font-size: 80px; line-height: 1; }
+    .results-headline {
+      font-size: 30px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--md-on-surface);
+    }
+    .results-score-card {
+      width: 100%;
+      background: linear-gradient(135deg, var(--md-primary), #7B2D8B);
+      border-radius: 24px;
+      padding: 28px;
+      text-align: center;
+      color: white;
+      box-shadow: var(--md-elevation-2);
+    }
+    .results-score-card .pct { font-size: 60px; font-weight: 800; line-height: 1; }
+    .results-score-card .sub { font-size: 15px; opacity: 0.75; margin-top: 6px; }
+    .results-detail-card {
+      width: 100%;
+      background: var(--md-surface-container);
+      border-radius: 20px;
+      padding: 4px 16px;
+    }
+    .results-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--md-outline-variant);
+      font-size: 15px;
+    }
+    .results-row:last-child { border-bottom: none; }
+    .results-row .val { font-weight: 700; }
+    .results-row .green { color: #0A5C38; }
+    .results-row .red   { color: #7D0028; }
+    .results-row .purple { color: var(--md-primary); }
+
+    /* ── PROGRESS ── */
+    #progress { background: var(--md-surface); }
+    .progress-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--md-on-surface-variant);
+      padding: 4px 4px 8px;
+    }
+    .total-score-card {
+      background: var(--md-primary);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: white;
+    }
+    .total-score-card .big {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1;
+      color: white;
+    }
+    .total-score-card .info { flex: 1; }
+    .total-score-card .info .label { font-size: 14px; opacity: 0.75; }
+    .total-score-card .icon { font-size: 40px; }
+
+    .cat-prog-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--md-outline-variant);
+    }
+    .cat-prog-item:last-child { border-bottom: none; }
+    .cat-prog-icon { font-size: 24px; width: 32px; text-align: center; }
+    .cat-prog-info { flex: 1; }
+    .cat-prog-name { font-size: 14px; font-weight: 500; }
+    .cat-prog-bar-bg {
+      background: var(--md-outline-variant);
+      border-radius: 4px;
+      height: 6px;
+      margin-top: 5px;
+    }
+    .cat-prog-bar-fill {
+      background: var(--md-secondary);
+      border-radius: 4px;
+      height: 6px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cat-prog-pct {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--md-primary);
+      min-width: 32px;
+      text-align: right;
+    }
+
+    .ach-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--md-outline-variant);
+    }
+    .ach-item:last-child { border-bottom: none; }
+    .ach-icon { font-size: 32px; }
+    .ach-info .ach-name { font-size: 15px; font-weight: 500; }
+    .ach-info .ach-desc { font-size: 13px; color: var(--md-on-surface-variant); margin-top: 2px; }
+    .ach-item.locked { opacity: 0.35; filter: grayscale(1); }
+    .ach-check { font-size: 20px; color: var(--md-secondary); margin-left: auto; }
+
+    /* ── What's New Screen ── */
+    #whats-new { background: var(--md-surface); padding-bottom: calc(var(--nav-height) + var(--nav-bottom) + 16px); }
+    .news-body-md {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .news-section-label-md {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--md-on-surface-variant);
+      padding: 8px 4px 4px;
+    }
+    .news-card-md {
+      background: var(--md-surface);
+      border-radius: 20px;
+      box-shadow: var(--md-elevation-1);
+      overflow: hidden;
+    }
+    .news-card-top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 16px 16px 10px;
+    }
+    .news-tag-icon-md {
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .news-card-info { flex: 1; }
+    .news-pill-md {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 5px;
+    }
+    .news-pill-md.security  { background: #FFDDE8; color: #7D0028; }
+    .news-pill-md.admin     { background: #D3EAFF; color: #0A4E8A; }
+    .news-pill-md.feature   { background: #C8F5E0; color: #0A5C38; }
+    .news-pill-md.release   { background: #FFF0C8; color: #7A4F00; }
+    .news-pill-md.developer { background: #EDE0FF; color: #5B1F8A; }
+    .news-card-title-md {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--md-on-surface);
+      line-height: 1.35;
+      margin-bottom: 3px;
+    }
+    .news-card-date-md {
+      font-size: 12px;
+      color: var(--md-on-surface-variant);
+    }
+    .news-card-summary-md {
+      font-size: 14px;
+      color: var(--md-on-surface-variant);
+      line-height: 1.55;
+      padding: 0 16px 14px;
+    }
+    .news-card-link-md {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--md-outline-variant);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--md-primary);
+      text-decoration: none;
+    }
+    .news-updated-chip {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    /* ── Android Bottom Navigation ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: var(--md-surface);
+      border-top: 1px solid var(--md-outline-variant);
+      display: flex;
+      padding-bottom: var(--nav-bottom);
+      z-index: 100;
+    }
+    .nav-dest {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0 8px;
+      cursor: pointer;
+      position: relative;
+      gap: 4px;
+    }
+    .nav-indicator {
+      position: absolute;
+      top: 6px;
+      width: 64px;
+      height: 32px;
+      border-radius: 16px;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    .nav-dest.active .nav-indicator {
+      background: var(--md-primary-container);
+    }
+    .nav-icon {
+      font-size: 20px;
+      z-index: 1;
+      line-height: 32px;
+    }
+    .nav-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--md-on-surface-variant);
+      letter-spacing: 0.4px;
+    }
+    .nav-dest.active .nav-label { color: var(--md-primary); font-weight: 700; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ HOME ══ -->
+  <div class="screen active" id="home">
+    <div class="home-hero">
+      <div class="home-app-icon">🔐</div>
+      <h1 class="home-title">Slack Security Challenge</h1>
+      <p class="home-subtitle">Master Slack security through interactive flashcards and quizzes</p>
+    </div>
+    <div class="home-body">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="num">40</div>
+          <div class="lbl">Cards</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">6</div>
+          <div class="lbl">Topics</div>
+        </div>
+        <div class="stat-card">
+          <div class="num" id="stat-score">0</div>
+          <div class="lbl">Score</div>
+        </div>
+      </div>
+
+      <button class="extended-fab" onclick="showScreen('categories')">
+        <span class="fab-icon">🚀</span>
+        Start Learning
+      </button>
+
+      <button class="extended-fab" onclick="shareApp()" style="background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.3);box-shadow:none">
+        <span class="fab-icon">📤</span>
+        Share with friends
+      </button>
+
+      <div class="m3-card filled" style="padding:16px 16px 4px">
+        <div class="section-title">Your Progress</div>
+        <div id="home-cat-summary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CATEGORIES ══ -->
+  <div class="screen" id="categories">
+    <div class="top-app-bar">
+      <div class="top-app-bar-title" style="padding-left:16px">
+        <div>Topics</div>
+        <div class="top-app-bar-subtitle">Choose a security category</div>
+      </div>
+    </div>
+    <div class="cat-list" id="cat-list"></div>
+  </div>
+
+  <!-- ══ GAME ══ -->
+  <div class="screen" id="game">
+    <div class="top-app-bar" id="game-topbar">
+      <button class="icon-btn" onclick="showScreen('categories')">‹</button>
+      <div style="flex:1; padding: 0 8px;">
+        <div class="top-app-bar-title" id="game-cat-title">Authentication</div>
+        <div class="top-app-bar-subtitle" id="game-progress-sub">Card 1 of 7</div>
+      </div>
+      <div class="score-chip" id="game-score-chip">0 pts</div>
+    </div>
+    <div class="progress-linear">
+      <div class="progress-linear-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="game-body" id="game-body"></div>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div class="screen" id="results">
+    <div class="results-emoji" id="r-emoji">🎉</div>
+    <div class="results-headline" id="r-title">Great Work!</div>
+    <div class="results-score-card">
+      <div class="pct" id="r-pct">–</div>
+      <div class="sub" id="r-sub">0 of 0 correct</div>
+    </div>
+    <div class="results-detail-card">
+      <div class="results-row"><span>Correct</span><span class="val green" id="r-correct">0</span></div>
+      <div class="results-row"><span>Incorrect</span><span class="val red" id="r-wrong">0</span></div>
+      <div class="results-row"><span>Points Earned</span><span class="val purple" id="r-points">+0</span></div>
+    </div>
+    <button class="btn-filled" onclick="retryCategory()">Try Again</button>
+    <button class="btn-outlined" onclick="showScreen('categories')">Back to Topics</button>
+  </div>
+
+  <!-- ══ PROGRESS ══ -->
+  <div class="screen" id="progress">
+    <div class="top-app-bar">
+      <div class="top-app-bar-title" style="padding-left:16px">
+        <div>My Progress</div>
+        <div class="top-app-bar-subtitle">Achievements &amp; scores</div>
+      </div>
+    </div>
+    <div class="progress-body">
+      <div class="total-score-card">
+        <div class="info">
+          <div class="label">Total Points</div>
+          <div class="big" id="total-pts">0</div>
+        </div>
+        <div class="icon">🏆</div>
+      </div>
+
+      <div class="m3-card" style="padding:16px">
+        <div class="section-title">Topic Progress</div>
+        <div id="prog-cat-list"></div>
+      </div>
+
+      <div class="m3-card" style="padding:16px">
+        <div class="section-title">Achievements</div>
+        <div id="prog-ach-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ WHAT'S NEW ══ -->
+  <div class="screen" id="whats-new">
+    <div class="top-app-bar">
+      <div class="top-app-bar-title" style="padding-left:16px">
+        <div>What's New</div>
+        <div class="top-app-bar-subtitle" id="android-news-date">Updated weekly</div>
+      </div>
+    </div>
+    <div class="news-body-md" id="android-news-body"></div>
+  </div>
+
+  <!-- ══ BOTTOM NAV ══ -->
+  <nav class="bottom-nav">
+    <div class="nav-dest active" id="nav-home" onclick="navTo('home')">
+      <div class="nav-indicator"></div>
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Home</div>
+    </div>
+    <div class="nav-dest" id="nav-categories" onclick="navTo('categories')">
+      <div class="nav-indicator"></div>
+      <div class="nav-icon">📚</div>
+      <div class="nav-label">Topics</div>
+    </div>
+    <div class="nav-dest" id="nav-whats-new" onclick="navTo('whats-new')">
+      <div class="nav-indicator"></div>
+      <div class="nav-icon">🆕</div>
+      <div class="nav-label">What's New</div>
+    </div>
+    <div class="nav-dest" id="nav-progress" onclick="navTo('progress')">
+      <div class="nav-indicator"></div>
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">Progress</div>
+    </div>
+  </nav>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────
+const categories = [
+  {
+    id: 'auth', name: 'Authentication', icon: '🔑',
+    color: '#4A154B', bg: '#FFDCFF',
+    source: 'help.slack.com/articles/115004155306',
+    cards: [
+      { q: 'What is Two-Factor Authentication (2FA) in Slack?', a: 'A security feature requiring users to enter both their password and a time-based verification code (from an authenticator app or SMS) when signing in.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Can a Slack admin make 2FA mandatory for all workspace members?', a: 'Yes. Workspace owners and admins can require all members to enable two-factor authentication before they can access the workspace.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What is SAML Single Sign-On (SSO) in Slack?', a: 'An enterprise authentication method that lets employees sign in to Slack using their company identity provider (e.g. Okta, Azure AD). It centralises access control and removes the need for a separate Slack password.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Who can configure Single Sign-On in a Slack Enterprise Grid?', a: 'Only Org Owners can configure SSO — it is the most restricted authentication setting in Enterprise Grid.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What is a session duration limit in Slack?', a: 'A setting that automatically signs members out after a defined period of inactivity, reducing the risk of unauthorised access on shared or unattended devices.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Who can set session duration limits in Slack?', a: 'Workspace owners and admins can set session duration limits to control how long members stay signed in.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Why is 2FA important for Slack accounts?', a: 'Even if a password is stolen or guessed, an attacker cannot sign in without the second factor (verification code), significantly reducing account takeover risk.', source: 'Slack Help: Best practices for Slack security' }
+    ]
+  },
+  {
+    id: 'access', name: 'Access Control', icon: '🛡️',
+    color: '#E01E5A', bg: '#FFDDE8',
+    source: 'help.slack.com/articles/201314026',
+    cards: [
+      { q: 'What are the three core member roles in a Slack workspace?', a: 'Owner/Admin (highest privileges), Member, and Guest (most restricted). Enterprise Grid adds Org Owner and Org Admin above Workspace Owner.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What is the difference between a single-channel and multi-channel guest?', a: 'A single-channel guest can only access one specific channel. A multi-channel guest can be added to multiple channels but still cannot access public channels or workspace-wide features.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Why should you use guest accounts for contractors and clients?', a: 'Guest accounts limit access to only the specific channels needed, preventing exposure to sensitive conversations, files, and workspace-wide data.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What should you do when a team member leaves your organisation?', a: 'Deactivate their Slack account immediately. On Business+ and Enterprise plans, SCIM provisioning can automate this via your identity provider.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What is SCIM provisioning in Slack?', a: 'System for Cross-domain Identity Management — an automated protocol that syncs your company directory (e.g. Okta) with Slack to automatically provision or deactivate accounts.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Who can deactivate a member\'s account in Slack?', a: 'Only Workspace Owners and Admins can deactivate member accounts.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Who can change another member\'s role in Slack?', a: 'Only Workspace Owners and Admins can change member roles.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Who can reset all members\' passwords in Slack?', a: 'This requires a Workspace Owner to change the default setting — it is owner-level only.', source: 'Slack Help: Permissions in a Slack workspace' }
+    ]
+  },
+  {
+    id: 'apps', name: 'App Permissions', icon: '⚙️',
+    color: '#0A5C9B', bg: '#D3EAFF',
+    source: 'help.slack.com/articles/115004155306',
+    cards: [
+      { q: 'By default, who can install apps in a Slack workspace?', a: 'By default, any member can install apps. Workspace owners should review and restrict this setting so only approved apps can be added.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What is Slack App Approval?', a: 'A workspace setting (turned on by owners) that requires admin review and approval before any new app can be installed, preventing unauthorised third-party access.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Who can turn on App Approval in Slack?', a: 'Turning on app approval requires a Workspace Owner to change the default setting.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Who can set app management policies in Enterprise Grid?', a: 'Only Org Owners and Org Admins can set app management policies that apply across the entire Enterprise Grid organisation.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Why is it risky to allow all members to install apps?', a: 'Third-party apps can request access to messages, files, and channels. Unvetted apps may exfiltrate data, contain malware, or have excessive permissions.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What is an anomaly event in Slack\'s audit logs?', a: 'An event flag indicating unexpected or suspicious app or user behaviour — such as an app accessing unusual data volumes or a user signing in from an unexpected location.', source: 'Slack Help: Best practices for Slack security' }
+    ]
+  },
+  {
+    id: 'data', name: 'Data Security', icon: '🗄️',
+    color: '#0A5C38', bg: '#C8F5E0',
+    source: 'help.slack.com/articles/201314026',
+    cards: [
+      { q: 'Who can export data from Slack conversations?', a: 'Only Workspace Owners/Admins can export data. For private channels and DMs, the workspace owner must change the default. Enterprise Grid has dedicated Export Admin roles.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What is a message retention policy in Slack?', a: 'A setting that automatically deletes messages after a specified period for data governance. Org owners/admins set policies; members can only adjust if explicitly permitted.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Who controls file retention settings in Enterprise Grid?', a: 'File retention is restricted exclusively to Org Owners and Org Admins.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What is a Legal Hold in Slack?', a: 'A feature (Enterprise Grid) that preserves all messages and files for specific users or channels, preventing deletion — used for legal discovery and compliance.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What are Slack\'s specialised system roles for data protection?', a: 'Enterprise Grid provides: DLP Admin, Legal Holds Admin, Export Admin, and Audit Logs Admin — enabling least-privilege access without full admin rights.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Can Slack admins control whether member email addresses are visible?', a: 'Yes. Admins can control whether member email addresses are displayed in user profiles, limiting data exposure.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What does DLP stand for in Slack\'s Enterprise security model?', a: 'Data Loss Prevention. The DLP Admin role manages policies that detect and prevent sensitive data (e.g. credit card numbers, PII) from being shared inappropriately.', source: 'Slack Help: Permissions in a Slack workspace' }
+    ]
+  },
+  {
+    id: 'monitoring', name: 'Monitoring & Audit', icon: '🔍',
+    color: '#7A4F00', bg: '#FFF0C8',
+    source: 'help.slack.com/articles/360000394286',
+    cards: [
+      { q: 'What are Audit Logs in Slack?', a: 'A record of all significant events in your Slack organisation (sign-ins, exports, permission changes, app installs) — available on Enterprise Grid for security monitoring.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Who can access audit logs in a Slack Enterprise Grid?', a: 'Org Owners, Org Admins, and members assigned the Audit Logs Admin system role can access audit logs.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What is the Slack Audit Log API?', a: 'An API that lets Enterprise Grid organisations programmatically retrieve audit events for integration with SIEM tools (like Splunk or Datadog) for automated threat detection.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What is a SIEM tool and why integrate one with Slack?', a: 'Security Information and Event Management — software aggregating logs from multiple systems. Integrating Slack audit logs enables automated alerting on suspicious activity patterns.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What analytics are available on paid Slack plans?', a: 'Admins can access analytics dashboards showing member activity, channel engagement, and usage patterns — helping identify unusual behaviour.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'What should admins do to monitor invitation activity?', a: 'Periodically review both pending and accepted invitations to catch unauthorised access. Admins can also require approval for all new invitations.', source: 'Slack Help: Best practices for Slack security' }
+    ]
+  },
+  {
+    id: 'connect', name: 'External Collaboration', icon: '🌐',
+    color: '#5B1F8A', bg: '#EDE0FF',
+    source: 'help.slack.com/articles/115004155306',
+    cards: [
+      { q: 'What is Slack Connect?', a: 'A feature that lets users collaborate with people at other organisations via shared channels — without granting them full membership in your own workspace.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Why is Slack Connect more secure than inviting external users as full members?', a: 'Slack Connect keeps external collaborators in controlled shared channels only. They cannot access other channels, files, or workspace settings — limiting data exposure.', source: 'Slack Help: Best practices for Slack security' },
+      { q: 'Who can invite single-channel guests to private channels?', a: 'Only Workspace Owners and Admins can invite single-channel guests to private channels.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What permissions do guest users NOT have in Slack?', a: 'Guests cannot: join public channels on their own, use @everyone, create channels (single-channel guests), or access workspace-wide features.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'What is domain claiming in Slack Enterprise Grid?', a: 'A feature allowing an organisation to claim ownership of an email domain, ensuring all workspace members with that domain are managed centrally. Only Org Owners/Admins can manage it.', source: 'Slack Help: Permissions in a Slack workspace' },
+      { q: 'Why should you verify ownership of approved email domains?', a: 'If you enable auto-join for a domain you do not own, people outside your organisation could gain unauthorised access to your workspace.', source: 'Slack Help: Best practices for Slack security' }
+    ]
+  }
+];
+
+// ─── STATE ──────────────────────────────────────
+const state = {
+  currentCat: null,
+  cardIdx: 0,
+  mode: 'flashcard',
+  sessionCorrect: 0,
+  sessionWrong: 0,
+  sessionPoints: 0,
+  quizAnswered: false,
+  totalScore: parseInt(localStorage.getItem('totalScore') || '0'),
+  catScores: JSON.parse(localStorage.getItem('catScores') || '{}'),
+  achievements: JSON.parse(localStorage.getItem('achievements') || '[]')
+};
+
+function save() {
+  localStorage.setItem('totalScore', state.totalScore);
+  localStorage.setItem('catScores', JSON.stringify(state.catScores));
+  localStorage.setItem('achievements', JSON.stringify(state.achievements));
+}
+
+// ─── NAVIGATION ─────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-dest').forEach(n => n.classList.remove('active'));
+  const map = { home: 'nav-home', categories: 'nav-categories', progress: 'nav-progress', 'whats-new': 'nav-whats-new' };
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+  if (id === 'progress') renderProgress();
+  if (id === 'home') renderHomeSummary();
+  if (id === 'whats-new') renderWhatsNewAndroid();
+}
+function navTo(id) { showScreen(id); }
+
+function shareApp() {
+  const url = 'https://demojvn.github.io/slack-security-game';
+  const text = '🔐 Test your Slack security knowledge with this free flashcard game!';
+  if (navigator.share) {
+    navigator.share({ title: 'Slack Security Challenge', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Link copied!\n\n' + url);
+    }).catch(() => {
+      alert('Share this link:\n\n' + url);
+    });
+  }
+}
+
+// ─── HOME ───────────────────────────────────────
+function renderHomeSummary() {
+  document.getElementById('stat-score').textContent = state.totalScore;
+  const el = document.getElementById('home-cat-summary');
+  el.innerHTML = categories.map(cat => {
+    const sc = state.catScores[cat.id];
+    const done = !!sc;
+    const pct = sc && sc.total > 0 ? Math.round((sc.correct / sc.total) * 100) : 0;
+    return `
+      <div class="cat-prog-item">
+        <div class="cat-prog-icon">${cat.icon}</div>
+        <div class="cat-prog-info">
+          <div class="cat-prog-name">${cat.name}</div>
+          <div class="cat-prog-bar-bg">
+            <div class="cat-prog-bar-fill" style="width:${done ? Math.max(pct, 8) : 0}%"></div>
+          </div>
+        </div>
+        <div class="cat-prog-pct">${done ? (sc.total > 0 ? pct + '%' : '✓') : '–'}</div>
+      </div>`;
+  }).join('');
+}
+
+// ─── CATEGORIES ─────────────────────────────────
+function renderCategories() {
+  const list = document.getElementById('cat-list');
+  list.innerHTML = categories.map(cat => {
+    const sc = state.catScores[cat.id];
+    const pct = sc && sc.total > 0 ? Math.round((sc.correct / sc.total) * 100) : null;
+    const badge = pct !== null
+      ? `<span class="m3-chip green">${pct}%</span>`
+      : `<span style="font-size:20px;color:#aaa">›</span>`;
+    return `
+      <div class="cat-item" onclick="startCat('${cat.id}')">
+        <div class="cat-item-leading" style="background:${cat.bg}">${cat.icon}</div>
+        <div class="cat-item-content">
+          <div class="cat-item-title">${cat.name}</div>
+          <div class="cat-item-sub">${cat.cards.length} flashcards</div>
+        </div>
+        <div class="cat-item-trailing">${badge}</div>
+      </div>`;
+  }).join('');
+}
+
+// ─── GAME ───────────────────────────────────────
+function startCat(catId) {
+  state.currentCat = categories.find(c => c.id === catId);
+  state.cardIdx = 0;
+  state.sessionCorrect = 0;
+  state.sessionWrong = 0;
+  state.sessionPoints = 0;
+  state.quizAnswered = false;
+  state.mode = 'flashcard';
+  document.getElementById('game-cat-title').textContent = state.currentCat.icon + ' ' + state.currentCat.name;
+  document.getElementById('game-score-chip').textContent = '0 pts';
+  showScreen('game');
+  renderCard();
+}
+
+function retryCategory() { startCat(state.currentCat.id); }
+
+function renderCard() {
+  const { currentCat: cat, cardIdx: idx, mode } = state;
+  const total = cat.cards.length;
+  document.getElementById('game-progress-sub').textContent = `Card ${idx + 1} of ${total}`;
+  document.getElementById('progress-fill').style.width = `${(idx / total) * 100}%`;
+
+  const body = document.getElementById('game-body');
+  const modeToggle = `
+    <div class="segmented-btn">
+      <button class="seg-opt ${mode === 'flashcard' ? 'active' : ''}" onclick="switchMode('flashcard')">📖 Flashcard</button>
+      <button class="seg-opt ${mode === 'quiz' ? 'active' : ''}" onclick="switchMode('quiz')">🧩 Quiz</button>
+    </div>`;
+
+  body.innerHTML = mode === 'flashcard'
+    ? modeToggle + flashcardHtml(cat.cards[idx])
+    : modeToggle + quizHtml(cat.cards[idx], cat.cards, idx);
+
+  if (mode === 'quiz') state.quizAnswered = false;
+}
+
+function switchMode(m) { state.mode = m; renderCard(); }
+
+// ─── FLASHCARD ──────────────────────────────────
+function flashcardHtml(card) {
+  return `
+    <div class="card-3d">
+      <div class="card-inner" id="card-inner" onclick="flipCard()">
+        <div class="card-face card-front">
+          <div class="card-eyebrow">Question</div>
+          <div class="card-q">${card.q}</div>
+          <div class="card-tap-hint">👆 Tap to reveal answer</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-eyebrow">Answer</div>
+          <div class="card-a">${card.a}</div>
+          <div class="card-src">Source: ${card.source}</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-row" style="margin-top:8px">
+      <button class="btn-tonal" onclick="prevCard()">‹ Prev</button>
+      <button class="btn-filled" onclick="nextCard()">Next ›</button>
+    </div>`;
+}
+
+function flipCard() {
+  const el = document.getElementById('card-inner');
+  if (el) el.classList.toggle('flipped');
+}
+
+function prevCard() {
+  if (state.cardIdx > 0) { state.cardIdx--; renderCard(); }
+}
+function nextCard() {
+  if (state.cardIdx < state.currentCat.cards.length - 1) { state.cardIdx++; renderCard(); }
+  else showResults();
+}
+
+// ─── QUIZ ───────────────────────────────────────
+function genOptions(card, all, idx) {
+  const others = all.filter((_, i) => i !== idx);
+  const wrong = [...others].sort(() => Math.random() - 0.5).slice(0, 3);
+  return [...wrong.map(c => c.a), card.a].sort(() => Math.random() - 0.5);
+}
+
+function quizHtml(card, all, idx) {
+  const options = genOptions(card, all, idx);
+  const opts = options.map((o, i) =>
+    `<button class="option-btn" id="opt-${i}" onclick="checkAns(${i}, this.textContent, '${esc(card.a)}')">${o}</button>`
+  ).join('');
+  return `
+    <div class="quiz-card">
+      <div class="quiz-eyebrow">Question ${idx + 1}</div>
+      <div class="quiz-q">${card.q}</div>
+    </div>
+    <div class="options-list">${opts}</div>
+    <div class="feedback-banner" id="quiz-fb"></div>
+    <button class="next-action-btn" id="next-btn" onclick="nextCard()">Next →</button>`;
+}
+
+function esc(s) { return s.replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
+
+function checkAns(i, chosen, correct) {
+  if (state.quizAnswered) return;
+  state.quizAnswered = true;
+  const correctClean = correct.replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+  const isCorrect = chosen.trim() === correctClean.trim();
+  const fb = document.getElementById('quiz-fb');
+  document.querySelectorAll('.option-btn').forEach(el => {
+    el.classList.add('disabled');
+    if (el.textContent.trim() === correctClean.trim()) el.classList.add('reveal-correct');
+  });
+  if (isCorrect) {
+    document.getElementById(`opt-${i}`).classList.add('correct');
+    fb.className = 'feedback-banner show correct';
+    fb.textContent = '✅ Correct! +10 points';
+    state.sessionCorrect++;
+    state.sessionPoints += 10;
+    document.getElementById('game-score-chip').textContent = state.sessionPoints + ' pts';
+  } else {
+    document.getElementById(`opt-${i}`).classList.add('wrong');
+    fb.className = 'feedback-banner show wrong';
+    fb.textContent = '❌ Not quite — the correct answer is shown in green.';
+    state.sessionWrong++;
+  }
+  document.getElementById('next-btn').classList.add('show');
+  document.getElementById('progress-fill').style.width =
+    `${((state.cardIdx + 1) / state.currentCat.cards.length) * 100}%`;
+}
+
+// ─── RESULTS ────────────────────────────────────
+function showResults() {
+  const total = state.currentCat.cards.length;
+  const pct = state.mode === 'quiz' ? Math.round((state.sessionCorrect / total) * 100) : 100;
+  state.totalScore += state.sessionPoints;
+  state.catScores[state.currentCat.id] = {
+    correct: state.sessionCorrect,
+    total: state.mode === 'quiz' ? total : 0,
+    points: state.sessionPoints
+  };
+  checkAchievements();
+  save();
+
+  let emoji = '💪', title = 'Keep Practising!';
+  if (pct >= 90)      { emoji = '🏆'; title = 'Outstanding!'; }
+  else if (pct >= 70) { emoji = '🎉'; title = 'Great Work!'; }
+  else if (pct >= 50) { emoji = '📚'; title = 'Keep Learning!'; }
+
+  document.getElementById('r-emoji').textContent = emoji;
+  document.getElementById('r-title').textContent = title;
+  document.getElementById('r-pct').textContent = state.mode === 'quiz' ? `${pct}%` : '✓';
+  document.getElementById('r-sub').textContent = state.mode === 'quiz'
+    ? `${state.sessionCorrect} of ${total} correct` : `All ${total} cards reviewed`;
+  document.getElementById('r-correct').textContent = state.sessionCorrect;
+  document.getElementById('r-wrong').textContent = state.sessionWrong;
+  document.getElementById('r-points').textContent = `+${state.sessionPoints}`;
+  showScreen('results');
+}
+
+// ─── ACHIEVEMENTS ───────────────────────────────
+const ALL_ACH = [
+  { id: 'first',   icon: '⭐', name: 'First Steps',   desc: 'Complete your first category' },
+  { id: 'perfect', icon: '🏆', name: 'Perfect Score',  desc: 'Get 100% on a quiz' },
+  { id: 'allcat',  icon: '🎓', name: 'All Topics',     desc: 'Complete all 6 categories' },
+  { id: 'score100',icon: '💯', name: 'Century',        desc: 'Earn 100 total points' },
+  { id: 'score500',icon: '🚀', name: 'Security Pro',   desc: 'Earn 500 total points' }
+];
+
+function checkAchievements() {
+  const a = state.achievements;
+  if (!a.includes('first') && Object.keys(state.catScores).length >= 1) a.push('first');
+  if (!a.includes('perfect') && state.mode === 'quiz' && state.sessionCorrect === state.currentCat.cards.length) a.push('perfect');
+  if (!a.includes('allcat') && Object.keys(state.catScores).length >= categories.length) a.push('allcat');
+  if (!a.includes('score100') && state.totalScore >= 100) a.push('score100');
+  if (!a.includes('score500') && state.totalScore >= 500) a.push('score500');
+}
+
+// ─── PROGRESS ───────────────────────────────────
+function renderProgress() {
+  document.getElementById('total-pts').textContent = state.totalScore;
+
+  document.getElementById('prog-cat-list').innerHTML = categories.map(cat => {
+    const sc = state.catScores[cat.id];
+    const pct = sc && sc.total > 0 ? Math.round((sc.correct / sc.total) * 100) : 0;
+    return `
+      <div class="cat-prog-item">
+        <div class="cat-prog-icon">${cat.icon}</div>
+        <div class="cat-prog-info">
+          <div class="cat-prog-name">${cat.name}</div>
+          <div class="cat-prog-bar-bg">
+            <div class="cat-prog-bar-fill" style="width:${sc ? Math.max(pct, 8) : 0}%"></div>
+          </div>
+        </div>
+        <div class="cat-prog-pct">${sc ? (sc.total > 0 ? pct + '%' : '✓') : '–'}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('prog-ach-list').innerHTML = ALL_ACH.map(a => {
+    const earned = state.achievements.includes(a.id);
+    return `
+      <div class="ach-item ${earned ? '' : 'locked'}">
+        <div class="ach-icon">${a.icon}</div>
+        <div class="ach-info">
+          <div class="ach-name">${a.name}</div>
+          <div class="ach-desc">${a.desc}</div>
+        </div>
+        ${earned ? '<div class="ach-check">✓</div>' : ''}
+      </div>`;
+  }).join('');
+}
+
+// ─── WHAT'S NEW ─────────────────────────────────
+const whatsNewData = {
+  lastUpdated: '2 June 2026',
+  sections: [
+    {
+      label: 'Security Updates',
+      items: [
+        { icon: '🔒', iconBg: '#FFDDE8', tag: 'security', tagLabel: 'Security', title: 'PKCE is now generally available for Slack apps', date: '30 March 2026', summary: 'PKCE eliminates the need to embed a client_secret in public clients, making OAuth flows more secure. Enabling PKCE is a one-way operation — refresh tokens expire after 30 days.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { icon: '🛡️', iconBg: '#FFDDE8', tag: 'security', tagLabel: 'Security', title: 'Desktop app security improvements (v4.48.102)', date: '17 March 2026', summary: 'The latest Slack desktop app includes security improvements. Slack recommends all users update. Three prior February releases also included minor security improvements.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
+      ]
+    },
+    {
+      label: 'Admin & Permissions',
+      items: [
+        { icon: '⚙️', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'Optional OAuth scopes give admins finer app control', date: '16 March 2026', summary: 'Workspace admins can now pre-approve which optional OAuth scopes are available when users install apps — allowing an app while restricting specific permissions it can request.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { icon: '🏢', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'Slack for Mac now available in PKG format', date: '22 October 2024', summary: 'Slack for macOS is now available as a PKG installer for enterprise deployment via MDM tools like Jamf or Mosyle, without requiring App Store installation.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' },
+        { icon: '🔑', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'macOS signing certificate company name changed', date: '17 February 2025', summary: 'Slack\'s macOS certificate changed from "SLACK TECHNOLOGIES INC" to "SLACK TECHNOLOGIES, LLC". Admins using certificate-based allowlists should update their policies.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
+      ]
+    },
+    {
+      label: 'New Features',
+      items: [
+        { icon: '🤖', iconBg: '#C8F5E0', tag: 'feature', tagLabel: 'Feature', title: 'New Slack MCP Server tools expand data access', date: '13 May 2026', summary: 'Five new MCP Server tools added including "Read files" and "List channel members". Enterprise admins should review data-access policies for these expanded capabilities.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { icon: '🔗', iconBg: '#C8F5E0', tag: 'feature', tagLabel: 'Feature', title: 'SSH/FTP/SFTP links now support domain-level approval', date: '20 September 2021', summary: 'Slack now supports approving SSH, FTP, SFTP, and SMB links at the domain level, reducing risk by letting admins whitelist specific trusted servers rather than enabling global access.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
+      ]
+    },
+    {
+      label: 'Developer & API',
+      items: [
+        { icon: '🧑‍💻', iconBg: '#EDE0FF', tag: 'developer', tagLabel: 'Developer', title: 'assistant.threads.setStatus scope migration required', date: '5 March 2026', summary: 'The assistant:write scope for setStatus will eventually be removed. Developers should migrate to chat:write promptly to avoid future disruption.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { icon: '📦', iconBg: '#EDE0FF', tag: 'developer', tagLabel: 'Developer', title: 'Slack CLI v4.1.0 adds optional OAuth scope support', date: '19 May 2026', summary: 'CLI v4.1.0 adds support for bot_optional and user_optional OAuth scope fields in the app manifest schema for apps using optional scopes.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' }
+      ]
+    }
+  ]
+};
+
+function renderWhatsNewAndroid() {
+  document.getElementById('android-news-date').textContent = 'Updated ' + whatsNewData.lastUpdated;
+  const body = document.getElementById('android-news-body');
+  body.innerHTML = whatsNewData.sections.map(section => {
+    const items = section.items.map(item => `
+      <div class="news-card-md">
+        <div class="news-card-top">
+          <div class="news-tag-icon-md" style="background:${item.iconBg}">${item.icon}</div>
+          <div class="news-card-info">
+            <div class="news-pill-md ${item.tag}">${item.tagLabel}</div>
+            <div class="news-card-title-md">${item.title}</div>
+            <div class="news-card-date-md">${item.date}</div>
+          </div>
+        </div>
+        <div class="news-card-summary-md">${item.summary}</div>
+        <a class="news-card-link-md" href="${item.sourceUrl}" target="_blank" rel="noopener">📎 ${item.source} ↗</a>
+      </div>`).join('');
+    return `<div class="news-section-label-md">${section.label}</div>${items}`;
+  }).join('');
+}
+
+// ─── INIT ───────────────────────────────────────
+renderCategories();
+renderHomeSummary();
+</script>
+</body>
+</html>

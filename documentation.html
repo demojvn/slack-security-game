@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slack Security Challenge — Documentation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 11pt;
+      color: #1D1C1D;
+      background: white;
+      line-height: 1.6;
+    }
+
+    /* ── Print Setup ── */
+    @page {
+      size: A4;
+      margin: 20mm 18mm 20mm 18mm;
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      body { font-size: 10pt; }
+      h1 { font-size: 22pt; }
+      h2 { font-size: 14pt; }
+      h3 { font-size: 11pt; }
+    }
+
+    /* ── Screen layout ── */
+    .doc {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 40px 80px;
+    }
+
+    /* ── Print button ── */
+    .print-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #4A154B;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 999;
+    }
+    .print-bar span { font-weight: 600; font-size: 14px; }
+    .print-btn {
+      background: white;
+      color: #4A154B;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .print-btn:hover { background: #f0e0f0; }
+
+    /* ── Cover Page ── */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 0 40px;
+    }
+    .cover-tag {
+      display: inline-block;
+      background: #4A154B;
+      color: white;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+      width: fit-content;
+    }
+    .cover h1 {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #4A154B;
+      margin-bottom: 16px;
+    }
+    .cover .subtitle {
+      font-size: 16px;
+      color: #616061;
+      margin-bottom: 48px;
+      max-width: 520px;
+      line-height: 1.5;
+    }
+    .cover-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .meta-box {
+      border: 2px solid #E8D5E8;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .meta-box .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #616061; }
+    .meta-box .value { font-size: 16px; font-weight: 700; color: #4A154B; margin-top: 4px; }
+    .cover-footer {
+      border-top: 2px solid #E8D5E8;
+      padding-top: 24px;
+      font-size: 12px;
+      color: #616061;
+    }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #4A154B;
+      margin: 48px 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #4A154B;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1D1C1D;
+      margin: 24px 0 8px;
+    }
+    h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4A154B;
+      margin: 16px 0 6px;
+    }
+    p { margin-bottom: 10px; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      border-left: 4px solid;
+    }
+    .callout.purple { background: #F5EDF5; border-color: #4A154B; }
+    .callout.green  { background: #E6F9F1; border-color: #2BAC76; }
+    .callout.yellow { background: #FEF8E8; border-color: #ECB22E; }
+    .callout.blue   { background: #E8F8FE; border-color: #36C5F0; }
+    .callout.red    { background: #FDE8EE; border-color: #E01E5A; }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; }
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      background: #4A154B;
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-content { flex: 1; }
+    .step-content strong { display: block; margin-bottom: 2px; }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 10.5pt;
+    }
+    th {
+      background: #4A154B;
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #E8D5E8;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #FAF4FA; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Badge pills ── */
+    .badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge.purple { background: #4A154B; color: white; }
+    .badge.green  { background: #2BAC76; color: white; }
+    .badge.yellow { background: #ECB22E; color: #1D1C1D; }
+    .badge.red    { background: #E01E5A; color: white; }
+    .badge.blue   { background: #36C5F0; color: #1D1C1D; }
+
+    /* ── Card preview ── */
+    .card-preview {
+      border: 2px solid #E8D5E8;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .card-preview .q-side {
+      background: linear-gradient(135deg, #4A154B, #7B2D8B);
+      color: white;
+      padding: 16px;
+    }
+    .card-preview .q-side .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 6px; }
+    .card-preview .q-side .txt { font-size: 13px; font-weight: 600; line-height: 1.4; }
+    .card-preview .a-side {
+      background: white;
+      padding: 16px;
+      border-top: 2px solid #E8D5E8;
+    }
+    .card-preview .a-side .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #616061; margin-bottom: 6px; }
+    .card-preview .a-side .txt { font-size: 12px; line-height: 1.5; color: #1D1C1D; }
+    .card-preview .src { font-size: 10px; color: #616061; font-style: italic; margin-top: 6px; }
+
+    ul, ol { padding-left: 20px; margin-bottom: 10px; }
+    li { margin-bottom: 5px; }
+
+    .toc { background: #F5EDF5; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+    .toc h3 { margin-top: 0; color: #4A154B; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 13px; padding: 3px 0; }
+    .toc .page-hint { float: right; color: #616061; font-size: 11px; }
+
+    .source-ref {
+      font-size: 11px;
+      color: #616061;
+      font-style: italic;
+      margin-top: 6px;
+    }
+
+    .icon-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+    .icon-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      border: 2px solid #E8D5E8;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .icon-item .ic { font-size: 20px; }
+
+    .score-table {
+      background: #F5EDF5;
+      border-radius: 10px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #E8D5E8;
+      font-size: 13px;
+    }
+    .score-row:last-child { border-bottom: none; }
+    .score-row .pts { font-weight: 700; color: #4A154B; }
+  </style>
+</head>
+<body>
+
+<!-- Print bar (hidden when printing) -->
+<div class="print-bar no-print">
+  <span>📄 Slack Security Challenge — Documentation</span>
+  <button class="print-btn" onclick="window.print()">🖨️ Save as PDF</button>
+</div>
+
+<div class="doc" style="margin-top: 52px">
+
+  <!-- ══════════════════ COVER ══════════════════ -->
+  <div class="cover">
+    <div class="cover-tag">Game Documentation</div>
+    <h1>Slack Security<br>Challenge</h1>
+    <p class="subtitle">
+      An interactive iPhone-optimised flashcard and quiz game teaching Slack security
+      best practices. All content sourced directly from Slack's official Help Centre.
+    </p>
+
+    <div class="cover-meta">
+      <div class="meta-box">
+        <div class="label">Total Cards</div>
+        <div class="value">40 flashcards</div>
+      </div>
+      <div class="meta-box">
+        <div class="label">Categories</div>
+        <div class="value">6 topics</div>
+      </div>
+      <div class="meta-box">
+        <div class="label">Game Modes</div>
+        <div class="value">2 modes</div>
+      </div>
+    </div>
+
+    <div class="toc">
+      <h3>Contents</h3>
+      <ol>
+        <li>How to Run the Game</li>
+        <li>How to Play</li>
+        <li>Game Structure &amp; Modes</li>
+        <li>Scoring &amp; Achievements</li>
+        <li>Complete Card Inventory (All 40 Cards)</li>
+        <li>Content Sources &amp; Accuracy Verification</li>
+      </ol>
+    </div>
+
+    <div class="cover-footer">
+      <strong>Content source:</strong> All questions and answers are derived from Slack's official Help Centre at
+      <strong>help.slack.com</strong>. Primary articles used:
+      <em>Best practices for Slack security (115004155306)</em> and
+      <em>Permissions in a Slack workspace (201314026)</em>.
+    </div>
+  </div>
+
+  <!-- ══════════════════ SECTION 1 — HOW TO RUN ══════════════════ -->
+  <div class="page-break"></div>
+  <h2>1. How to Run the Game</h2>
+
+  <p>The game is a single HTML file that runs entirely in a web browser — no installation, no server, no app store needed.</p>
+
+  <h3>Requirements</h3>
+  <ul>
+    <li>Any modern web browser (Safari, Chrome, Firefox, Edge)</li>
+    <li>Works on iPhone, iPad, Android, Mac, or PC</li>
+    <li>No internet connection required after opening the file</li>
+    <li>No accounts, logins, or sign-ups</li>
+  </ul>
+
+  <h3>Running on iPhone (Recommended)</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Transfer the file to your iPhone</strong>
+        Email <code>index.html</code> to yourself, share via AirDrop, or save it to iCloud Drive / Google Drive.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Open in Safari</strong>
+        Tap the file to open it. If prompted, choose "Open in Safari". The game is designed specifically for Safari on iOS.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Add to Home Screen (optional but recommended)</strong>
+        Tap the Share button (box with arrow) → "Add to Home Screen" → "Add". The game will appear as a full-screen app icon named "Slack Security" on your home screen.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>Play</strong>
+        Launch from your home screen. It opens in full-screen mode (no browser toolbar) just like a native app.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout yellow">
+    <strong>💡 Add to Home Screen Tip</strong>
+    When added to the iPhone home screen, the game runs in "standalone" mode — it hides the Safari address bar and looks exactly like a native iOS app. This is the intended experience.
+  </div>
+
+  <h3>Running on a Mac or PC</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Locate the file</strong>
+        Find <code>index.html</code> in the <code>slack security game</code> folder.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Double-click to open</strong>
+        The file opens in your default browser automatically.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Resize for best experience</strong>
+        Resize your browser window to roughly phone-width (375–430px wide) to simulate the iPhone layout, or use DevTools device emulation (F12 → device toolbar).
+      </div>
+    </div>
+  </div>
+
+  <h3>Sharing the Game</h3>
+  <p>Share the <code>index.html</code> file with anyone. It is self-contained — all code, styles, and data are in that single file. No external dependencies or internet required.</p>
+
+  <div class="callout green">
+    <strong>✅ Progress is saved locally</strong>
+    Scores and achievements are saved in the browser's localStorage. Progress persists between sessions on the same device and browser. Clearing browser data will reset progress.
+  </div>
+
+  <!-- ══════════════════ SECTION 2 — HOW TO PLAY ══════════════════ -->
+  <div class="page-break"></div>
+  <h2>2. How to Play</h2>
+
+  <h3>Getting Started</h3>
+  <p>When you open the game, you land on the <strong>Home Screen</strong>. Tap <strong>"Start Learning"</strong> to go to the Topics screen, where you choose a category.</p>
+
+  <div class="icon-row">
+    <div class="icon-item"><span class="ic">🏠</span> Home — scores &amp; start</div>
+    <div class="icon-item"><span class="ic">📚</span> Topics — choose a category</div>
+    <div class="icon-item"><span class="ic">📊</span> Progress — achievements &amp; stats</div>
+  </div>
+
+  <h3>Choosing a Category</h3>
+  <p>The Topics screen shows all 6 security categories. Each card shows:</p>
+  <ul>
+    <li>The category name and icon</li>
+    <li>How many flashcards it contains</li>
+    <li>Your best score percentage (once you've played it at least once)</li>
+  </ul>
+  <p>Tap any category to begin. You can play them in any order.</p>
+
+  <h3>Flashcard Mode</h3>
+  <p>This is the study/review mode. For each card:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content"><strong>Read the question</strong> on the front of the card (purple face)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content"><strong>Tap the card</strong> to flip it and reveal the answer (white face). The source article from help.slack.com is shown at the bottom.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content"><strong>Tap "Next"</strong> to advance to the next card, or "Prev" to go back.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">After the last card, your <strong>results screen</strong> appears.</div>
+    </div>
+  </div>
+
+  <h3>Quiz Mode</h3>
+  <p>This is the test/challenge mode. Switch to it using the toggle at the top of the game screen. For each question:</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content"><strong>Read the question</strong> in the question box.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content"><strong>Tap one of the 4 answer options</strong>. Answers are randomly generated — 1 correct answer and 3 plausible wrong answers drawn from other cards in the same category.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content"><strong>Instant feedback</strong>: correct answers turn green (+10 points), wrong answers turn red, and the correct answer is highlighted in green.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content"><strong>Tap "Next"</strong> to continue to the next question.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">After all questions, see your <strong>score, percentage, and points earned</strong> on the results screen.</div>
+    </div>
+  </div>
+
+  <div class="callout purple">
+    <strong>🔄 Switching Modes Mid-Game</strong>
+    You can switch between Flashcard and Quiz mode at any point using the toggle at the top of the game screen. Your card position is remembered.
+  </div>
+
+  <h3>Results Screen</h3>
+  <p>After completing a category you see:</p>
+  <ul>
+    <li>A performance icon (🏆 90%+, 🎉 70–89%, 📚 50–69%, 💪 below 50%)</li>
+    <li>Your percentage score (quiz mode) or completion confirmation (flashcard mode)</li>
+    <li>Correct / incorrect counts and points earned</li>
+    <li>Option to <strong>Try Again</strong> or <strong>Back to Topics</strong></li>
+  </ul>
+
+  <!-- ══════════════════ SECTION 3 — GAME STRUCTURE ══════════════════ -->
+  <div class="page-break"></div>
+  <h2>3. Game Structure &amp; Modes</h2>
+
+  <h3>The 6 Categories</h3>
+
+  <table>
+    <tr>
+      <th>Icon</th>
+      <th>Category</th>
+      <th>Cards</th>
+      <th>Topics Covered</th>
+    </tr>
+    <tr>
+      <td>🔑</td>
+      <td><strong>Authentication</strong></td>
+      <td>7</td>
+      <td>2FA, SAML SSO, session duration, admin enforcement</td>
+    </tr>
+    <tr>
+      <td>🛡️</td>
+      <td><strong>Access Control</strong></td>
+      <td>8</td>
+      <td>Roles, guest types, account deactivation, SCIM, permissions</td>
+    </tr>
+    <tr>
+      <td>⚙️</td>
+      <td><strong>App Permissions</strong></td>
+      <td>6</td>
+      <td>App installation defaults, app approval, anomaly events</td>
+    </tr>
+    <tr>
+      <td>🗄️</td>
+      <td><strong>Data Security</strong></td>
+      <td>7</td>
+      <td>Data export, retention policies, legal holds, DLP, system roles</td>
+    </tr>
+    <tr>
+      <td>🔍</td>
+      <td><strong>Monitoring &amp; Audit</strong></td>
+      <td>6</td>
+      <td>Audit logs, Audit Log API, SIEM integration, analytics</td>
+    </tr>
+    <tr>
+      <td>🌐</td>
+      <td><strong>External Collaboration</strong></td>
+      <td>6</td>
+      <td>Slack Connect, guest restrictions, domain claiming</td>
+    </tr>
+  </table>
+
+  <h3>Game Modes Comparison</h3>
+
+  <table>
+    <tr>
+      <th>Feature</th>
+      <th>📖 Flashcard Mode</th>
+      <th>🧩 Quiz Mode</th>
+    </tr>
+    <tr>
+      <td>Purpose</td>
+      <td>Study &amp; review</td>
+      <td>Test your knowledge</td>
+    </tr>
+    <tr>
+      <td>Interaction</td>
+      <td>Tap to flip card</td>
+      <td>Choose from 4 options</td>
+    </tr>
+    <tr>
+      <td>Answer visible</td>
+      <td>Always (on flip)</td>
+      <td>After answering</td>
+    </tr>
+    <tr>
+      <td>Points awarded</td>
+      <td>No (review only)</td>
+      <td>10 per correct answer</td>
+    </tr>
+    <tr>
+      <td>Source shown</td>
+      <td>Yes (on answer side)</td>
+      <td>No (during quiz)</td>
+    </tr>
+    <tr>
+      <td>Best for</td>
+      <td>Learning &amp; memorising</td>
+      <td>Self-testing &amp; scoring</td>
+    </tr>
+  </table>
+
+  <h3>Navigation</h3>
+  <p>The bottom navigation bar has three tabs accessible at all times:</p>
+  <ul>
+    <li><strong>Home (🏠)</strong> — Landing screen with total score and quick start</li>
+    <li><strong>Topics (📚)</strong> — Category selection grid</li>
+    <li><strong>Progress (📊)</strong> — Score history, category completion, achievements</li>
+  </ul>
+
+  <!-- ══════════════════ SECTION 4 — SCORING ══════════════════ -->
+  <h2>4. Scoring &amp; Achievements</h2>
+
+  <h3>How Points Work</h3>
+  <div class="score-table">
+    <div class="score-row"><span>Correct answer in Quiz mode</span><span class="pts">+10 points</span></div>
+    <div class="score-row"><span>Completing a flashcard set</span><span class="pts">0 points (review mode)</span></div>
+    <div class="score-row"><span>Wrong answer</span><span class="pts">0 points (no penalty)</span></div>
+  </div>
+  <p>Points accumulate across all categories and all sessions. Your total is displayed on the Home screen and in the Progress tab.</p>
+
+  <h3>Achievements</h3>
+  <table>
+    <tr>
+      <th>Badge</th>
+      <th>Name</th>
+      <th>How to Earn</th>
+    </tr>
+    <tr>
+      <td>⭐</td>
+      <td>First Steps</td>
+      <td>Complete your first category (either mode)</td>
+    </tr>
+    <tr>
+      <td>🏆</td>
+      <td>Perfect Score</td>
+      <td>Answer every question correctly in one quiz session</td>
+    </tr>
+    <tr>
+      <td>🎓</td>
+      <td>All Topics</td>
+      <td>Complete all 6 categories at least once</td>
+    </tr>
+    <tr>
+      <td>💯</td>
+      <td>Century</td>
+      <td>Accumulate 100 total points</td>
+    </tr>
+    <tr>
+      <td>🚀</td>
+      <td>Security Pro</td>
+      <td>Accumulate 500 total points</td>
+    </tr>
+  </table>
+
+  <div class="callout green">
+    <strong>📊 Progress is tracked per category</strong>
+    The Progress screen shows a percentage bar for each category based on your best quiz score. Categories you've only reviewed in flashcard mode show a check mark instead of a percentage.
+  </div>
+
+  <!-- ══════════════════ SECTION 5 — ALL 40 CARDS ══════════════════ -->
+  <div class="page-break"></div>
+  <h2>5. Complete Card Inventory</h2>
+  <p>All 40 flashcards are listed below for review and accuracy verification. Each card shows the question, the answer, and the specific help.slack.com article it was sourced from.</p>
+
+  <!-- AUTHENTICATION -->
+  <h3>🔑 Authentication (7 cards)</h3>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q1</div><div class="txt">What is Two-Factor Authentication (2FA) in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A security feature requiring users to enter both their password and a time-based verification code (from an authenticator app or SMS) when signing in.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q2</div><div class="txt">Can a Slack admin make 2FA mandatory for all workspace members?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Yes. Workspace owners and admins can require all members to enable two-factor authentication before they can access the workspace.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q3</div><div class="txt">What is SAML Single Sign-On (SSO) in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">An enterprise authentication method that lets employees sign in to Slack using their company identity provider (e.g. Okta, Azure AD). It centralises access control and removes the need for a separate Slack password.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q4</div><div class="txt">Who can configure Single Sign-On in a Slack Enterprise Grid?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Only Org Owners can configure SSO — it is the most restricted authentication setting in Enterprise Grid.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q5</div><div class="txt">What is a session duration limit in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A setting that automatically signs members out after a defined period of inactivity, reducing the risk of unauthorised access on shared or unattended devices.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q6</div><div class="txt">Who can set session duration limits in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Workspace owners and admins can set session duration limits to control how long members stay signed in.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q7</div><div class="txt">Why is 2FA important for Slack accounts?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Even if a password is stolen or guessed, an attacker cannot sign in without also having the second factor (the verification code), significantly reducing account takeover risk.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <!-- ACCESS CONTROL -->
+  <div class="page-break"></div>
+  <h3>🛡️ Access Control (8 cards)</h3>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q8</div><div class="txt">What are the three core member roles in a Slack workspace?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Owner/Admin (highest privileges), Member, and Guest (most restricted). Enterprise Grid adds Org Owner and Org Admin above Workspace Owner.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q9</div><div class="txt">What is the difference between a single-channel guest and a multi-channel guest in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A single-channel guest can only access one specific channel. A multi-channel guest can be added to multiple channels but still cannot access public channels or workspace-wide features.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q10</div><div class="txt">Why should you use guest accounts for contractors, interns, and clients?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Guest accounts limit access to only the specific channels needed, preventing exposure to sensitive conversations, files, and workspace-wide data.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q11</div><div class="txt">What should you do when a team member leaves your organisation?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Deactivate their Slack account immediately to prevent continued access. On Business+ and Enterprise plans, SCIM provisioning can automate this via your identity provider.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q12</div><div class="txt">What is SCIM provisioning in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">System for Cross-domain Identity Management — an automated protocol that syncs your company directory (e.g. Okta) with Slack to automatically provision or deactivate accounts when employees join or leave.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q13</div><div class="txt">Who can deactivate a member's account in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Only Workspace Owners and Admins can deactivate member accounts.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q14</div><div class="txt">Who can change another member's role in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Only Workspace Owners and Admins can change member roles.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q15</div><div class="txt">Who can reset all members' passwords in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">This requires a Workspace Owner to change the default setting — it is owner-level only.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <!-- APP PERMISSIONS -->
+  <div class="page-break"></div>
+  <h3>⚙️ App Permissions (6 cards)</h3>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q16</div><div class="txt">By default, who can install apps in a Slack workspace?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">By default, any member can install apps. Workspace owners should review and restrict this setting so only approved apps can be added.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q17</div><div class="txt">What is Slack App Approval?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A workspace setting (turned on by owners) that requires admin review and approval before any new app can be installed, preventing unauthorised third-party access.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q18</div><div class="txt">Who can turn on App Approval in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Turning on app approval requires a Workspace Owner to change the default setting.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q19</div><div class="txt">Who can set app management policies in Enterprise Grid?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Only Org Owners and Org Admins can set app management policies that apply across the entire Enterprise Grid organisation.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q20</div><div class="txt">Why is it risky to allow all members to install apps?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Third-party apps can request access to messages, files, and channels. Unvetted apps may exfiltrate data, contain malware, or have excessive permissions.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q21</div><div class="txt">What is an anomaly event in Slack's audit logs?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">An event flag that indicates unexpected or suspicious app or user behaviour — such as an app accessing unusual volumes of data or a user signing in from an unexpected location.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <!-- DATA SECURITY -->
+  <div class="page-break"></div>
+  <h3>🗄️ Data Security (7 cards)</h3>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q22</div><div class="txt">Who can export data from Slack conversations?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Only Workspace Owners/Admins can export data. For private channels and DMs, the workspace owner must change the default setting. Enterprise Grid has dedicated Export Admin roles.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q23</div><div class="txt">What is a message retention policy in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A setting that automatically deletes messages after a specified period to comply with data governance rules. Org owners/admins set policies; members can only adjust if explicitly permitted.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q24</div><div class="txt">Who controls file retention settings in Enterprise Grid?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">File retention is restricted exclusively to Org Owners and Org Admins.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q25</div><div class="txt">What is a Legal Hold in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A feature (Enterprise Grid) that preserves all messages and files for specific users or channels, preventing deletion — used for legal discovery and compliance.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q26</div><div class="txt">What are Slack's specialised system roles for data protection?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Enterprise Grid provides dedicated roles: DLP Admin (data loss prevention), Legal Holds Admin, Export Admin, and Audit Logs Admin — enabling least-privilege access without full admin rights.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q27</div><div class="txt">Can Slack admins control whether member email addresses are visible to others?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Yes. Admins can control whether member email addresses are displayed in user profiles, limiting data exposure.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q28</div><div class="txt">What does DLP stand for in Slack's Enterprise security model?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Data Loss Prevention. The DLP Admin system role manages policies that detect and prevent sensitive data (e.g. credit card numbers, PII) from being shared inappropriately.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <!-- MONITORING -->
+  <div class="page-break"></div>
+  <h3>🔍 Monitoring &amp; Audit (6 cards)</h3>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q29</div><div class="txt">What are Audit Logs in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A record of all significant events in your Slack organisation (sign-ins, file exports, permission changes, app installations) — available on Enterprise Grid for security monitoring.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q30</div><div class="txt">Who can access audit logs in a Slack Enterprise Grid?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Org Owners, Org Admins, and members assigned the Audit Logs Admin system role can access audit logs.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q31</div><div class="txt">What is the Slack Audit Log API?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">An API that lets Enterprise Grid organisations programmatically retrieve audit events for integration with SIEM tools (like Splunk or Datadog) for automated threat detection.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q32</div><div class="txt">What is a SIEM tool and why integrate one with Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Security Information and Event Management — software that aggregates logs from multiple systems. Integrating Slack audit logs with a SIEM enables automated alerting on suspicious activity patterns.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q33</div><div class="txt">What analytics are available on paid Slack plans?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Admins can access analytics dashboards showing member activity, channel engagement, and usage patterns — helping identify unusual behaviour.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q34</div><div class="txt">What should admins do to monitor invitation activity?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Periodically review both pending and accepted invitations to catch unauthorised access. Admins can also require admin approval for all new invitations.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <!-- EXTERNAL COLLAB -->
+  <div class="page-break"></div>
+  <h3>🌐 External Collaboration (6 cards)</h3>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q35</div><div class="txt">What is Slack Connect?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A feature that lets users collaborate with people at other organisations via shared channels — without granting them full membership in your own workspace.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q36</div><div class="txt">Why is Slack Connect more secure than inviting external users as full members?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Slack Connect keeps external collaborators in controlled shared channels only. They cannot access other channels, files, or workspace settings — limiting data exposure.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q37</div><div class="txt">Who can invite single-channel guests to private channels?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Only Workspace Owners and Admins can invite single-channel guests to private channels.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q38</div><div class="txt">What permissions do guest users NOT have in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">Guests cannot: join public channels on their own, use @everyone, create channels (single-channel guests), or access workspace-wide features.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q39</div><div class="txt">What is domain claiming in Slack Enterprise Grid?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">A feature allowing an organisation to claim ownership of an email domain, ensuring all workspace members with that domain are managed centrally. Only Org Owners/Admins can manage domain claiming.</div><div class="src">Source: Slack Help: Permissions in a Slack workspace (help.slack.com/articles/201314026)</div></div>
+  </div>
+
+  <div class="card-preview">
+    <div class="q-side"><div class="lbl">Q40</div><div class="txt">Why should you verify ownership of approved email domains in Slack?</div></div>
+    <div class="a-side"><div class="lbl">Answer</div><div class="txt">If you enable auto-join for an email domain you do not own, people outside your organisation could gain unauthorised access to your workspace.</div><div class="src">Source: Slack Help: Best practices for Slack security (help.slack.com/articles/115004155306)</div></div>
+  </div>
+
+  <!-- ══════════════════ SECTION 6 — SOURCES ══════════════════ -->
+  <div class="page-break"></div>
+  <h2>6. Content Sources &amp; Accuracy Verification</h2>
+
+  <p>All 40 flashcards in this game are derived exclusively from Slack's official Help Centre. No third-party sources, community wikis, or inferred content were used.</p>
+
+  <h3>Primary Sources</h3>
+
+  <table>
+    <tr>
+      <th>Article</th>
+      <th>URL</th>
+      <th>Cards</th>
+    </tr>
+    <tr>
+      <td><strong>Best practices for Slack security</strong></td>
+      <td>help.slack.com/articles/115004155306</td>
+      <td>Q1–7, Q10–11, Q16, Q20–21, Q27, Q29, Q31–36, Q40</td>
+    </tr>
+    <tr>
+      <td><strong>Permissions in a Slack workspace</strong></td>
+      <td>help.slack.com/articles/201314026</td>
+      <td>Q4, Q8–9, Q13–15, Q17–19, Q22–26, Q28, Q30, Q37–39</td>
+    </tr>
+  </table>
+
+  <h3>How to Verify Accuracy</h3>
+  <p>To verify any card's content, visit the source URL listed on the card (visible when flipped in Flashcard mode) and cross-reference the answer against the current article text.</p>
+
+  <div class="callout yellow">
+    <strong>⚠️ Content currency note</strong>
+    Slack updates its Help Centre periodically. If Slack changes a feature or policy, some answers may become outdated. It is recommended to re-verify cards against live help.slack.com articles before using the game for formal training.
+  </div>
+
+  <h3>Categories of Verified Facts</h3>
+  <table>
+    <tr>
+      <th>Fact Type</th>
+      <th>Examples in Game</th>
+      <th>Confidence</th>
+    </tr>
+    <tr>
+      <td>Permission level requirements</td>
+      <td>Who can configure SSO, who can reset passwords</td>
+      <td><span class="badge green">High</span> — directly from permissions table</td>
+    </tr>
+    <tr>
+      <td>Feature definitions</td>
+      <td>What is 2FA, SCIM, SIEM, Legal Hold</td>
+      <td><span class="badge green">High</span> — standard definitions</td>
+    </tr>
+    <tr>
+      <td>Default settings</td>
+      <td>Any member can install apps by default</td>
+      <td><span class="badge green">High</span> — confirmed in help article</td>
+    </tr>
+    <tr>
+      <td>Best practice recommendations</td>
+      <td>Deactivate accounts promptly, use guest roles</td>
+      <td><span class="badge yellow">Medium</span> — advisory guidance, may evolve</td>
+    </tr>
+    <tr>
+      <td>Enterprise-only features</td>
+      <td>Audit logs, system roles, legal holds</td>
+      <td><span class="badge green">High</span> — clearly documented as Enterprise Grid</td>
+    </tr>
+  </table>
+
+  <h3>What This Game Does Not Cover</h3>
+  <p>The following Slack security topics are referenced in the source articles but not currently included as flashcards. They can be added in a future version:</p>
+  <ul>
+    <li>Enterprise Key Management (EKM) — customer-managed encryption keys</li>
+    <li>Transport Layer Security (TLS) specifics</li>
+    <li>Slack's SOC 2 Type II and ISO 27001 compliance certifications</li>
+    <li>Data residency options</li>
+    <li>Slack's internal security bug bounty programme</li>
+    <li>Phishing simulation and social engineering awareness</li>
+  </ul>
+
+  <div class="callout purple">
+    <strong>📋 How to add more cards</strong>
+    Open <code>index.html</code> in a text editor. Find the <code>categories</code> array near the top of the <code>&lt;script&gt;</code> section. Add new objects to any category's <code>cards</code> array using the format: <code>{ q: "Question text", a: "Answer text", source: "Source citation" }</code>
+  </div>
+
+  <br><br>
+  <div style="border-top: 2px solid #E8D5E8; padding-top: 20px; font-size: 11px; color: #616061; text-align: center;">
+    Slack Security Challenge · Game Documentation · All content sourced from help.slack.com · Generated June 2026
+  </div>
+
+</div>
+
+<script>
+  // Auto-trigger print after a short delay if ?print=1 is in URL
+  if (window.location.search.includes('print=1')) {
+    setTimeout(() => window.print(), 500);
+  }
+</script>
+
+</body>
+</html>

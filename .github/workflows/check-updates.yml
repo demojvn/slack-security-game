@@ -1,0 +1,45 @@
+name: Weekly Slack Help Content Check
+
+on:
+  schedule:
+    # Runs every Monday at 9am UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Allows you to trigger it manually from GitHub any time
+
+jobs:
+  check-content:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install node-fetch cheerio
+        working-directory: scripts
+
+      - name: Run content check
+        id: check
+        run: node check-updates.js
+        working-directory: scripts
+
+      - name: Open GitHub issue if changes detected
+        if: steps.check.outputs.changes_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('scripts/changes-report.md', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📋 Slack Help content may have changed — ${new Date().toISOString().split('T')[0]}`,
+              body: report,
+              labels: ['content-update']
+            });

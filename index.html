@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Slack Security" />
+  <title>Slack Security Challenge</title>
+  <style>
+    :root {
+      --slack-purple: #4A154B;
+      --slack-aubergine: #3F0E40;
+      --slack-green: #2BAC76;
+      --slack-yellow: #ECB22E;
+      --slack-red: #E01E5A;
+      --slack-blue: #36C5F0;
+      --card-bg: #FFFFFF;
+      --body-bg: #F8F0F9;
+      --text-dark: #1D1C1D;
+      --text-mid: #616061;
+      --text-light: #FFFFFF;
+      --radius: 18px;
+      --shadow: 0 8px 32px rgba(74,21,75,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Rounded', 'Helvetica Neue', sans-serif;
+      background: var(--body-bg);
+      color: var(--text-dark);
+      overflow: hidden;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 430px;
+      height: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ─── Screens ─── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      overflow-y: auto;
+    }
+    .screen.active { opacity: 1; pointer-events: all; }
+
+    /* ─── Home Screen ─── */
+    #home {
+      background: linear-gradient(160deg, var(--slack-aubergine) 0%, var(--slack-purple) 60%, #7B2D8B 100%);
+      justify-content: center;
+      gap: 0;
+    }
+    .home-logo {
+      width: 100px;
+      height: 100px;
+      background: white;
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .home-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: white;
+      text-align: center;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .home-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      margin-bottom: 48px;
+      line-height: 1.4;
+      max-width: 280px;
+    }
+    .home-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .stat-pill {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 40px;
+      padding: 8px 18px;
+      text-align: center;
+    }
+    .stat-pill .num { font-size: 22px; font-weight: 700; color: white; }
+    .stat-pill .lbl { font-size: 11px; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-share {
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.35);
+      color: white;
+      border-radius: 14px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      max-width: 280px;
+      width: 100%;
+      margin-top: 4px;
+      transition: background 0.2s;
+    }
+    .btn-share:active { background: rgba(255,255,255,0.25); }
+
+    /* ─── Category Screen ─── */
+    #categories {
+      background: var(--body-bg);
+      padding-top: 0;
+    }
+    .cat-header {
+      width: 100%;
+      background: linear-gradient(160deg, var(--slack-aubergine), var(--slack-purple));
+      padding: 56px 20px 24px;
+      margin-bottom: 20px;
+    }
+    .cat-header h2 { color: white; font-size: 26px; font-weight: 700; }
+    .cat-header p { color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 4px; }
+    .cat-grid {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-bottom: 100px;
+    }
+    .cat-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+    }
+    .cat-card:active { transform: scale(0.97); box-shadow: 0 4px 16px rgba(74,21,75,0.1); }
+    .cat-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .cat-info { flex: 1; }
+    .cat-name { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+    .cat-count { font-size: 13px; color: var(--text-mid); margin-top: 2px; }
+    .cat-arrow { color: var(--text-mid); font-size: 20px; }
+    .cat-badge {
+      background: var(--slack-green);
+      color: white;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* ─── Game Screen ─── */
+    #game {
+      background: var(--body-bg);
+      padding-top: 0;
+      justify-content: flex-start;
+      padding-bottom: 90px;
+    }
+    .game-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      width: 100%;
+      background: linear-gradient(160deg, var(--slack-aubergine), var(--slack-purple));
+      padding: 52px 20px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      color: white;
+      flex-shrink: 0;
+    }
+    .game-info { flex: 1; }
+    .game-cat-name { color: white; font-size: 16px; font-weight: 700; }
+    .game-progress-text { color: rgba(255,255,255,0.7); font-size: 13px; }
+    .score-badge {
+      background: var(--slack-yellow);
+      color: var(--text-dark);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      background: rgba(255,255,255,0.2);
+      height: 4px;
+    }
+    .progress-bar-fill {
+      height: 4px;
+      background: var(--slack-yellow);
+      transition: width 0.4s ease;
+    }
+
+    .game-content {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 20px;
+      gap: 20px;
+    }
+
+    /* ─── Flashcard ─── */
+    .card-scene {
+      width: 100%;
+      perspective: 1200px;
+    }
+    .card-flipper {
+      position: relative;
+      width: 100%;
+      height: 220px;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .card-flipper.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .card-front {
+      background: linear-gradient(135deg, var(--slack-purple), #7B2D8B);
+      color: white;
+    }
+    .card-back {
+      background: white;
+      transform: rotateY(180deg);
+      color: var(--text-dark);
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      opacity: 0.75;
+    }
+    .card-question { font-size: 17px; font-weight: 600; line-height: 1.4; }
+    .card-answer { font-size: 15px; line-height: 1.5; color: var(--text-dark); }
+    .card-hint { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 12px; }
+    .card-source { font-size: 11px; color: var(--text-mid); margin-top: 12px; font-style: italic; }
+
+    .tap-hint {
+      font-size: 13px;
+      color: var(--text-mid);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── Quiz Mode ─── */
+    .quiz-question {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 100%;
+      box-shadow: var(--shadow);
+    }
+    .quiz-q-label { font-size: 11px; font-weight: 600; color: var(--slack-purple); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .quiz-q-text { font-size: 16px; font-weight: 600; line-height: 1.4; }
+
+    .quiz-options {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .quiz-option {
+      background: white;
+      border: 2px solid #E8D5E8;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+    .quiz-option:active { transform: scale(0.98); }
+    .quiz-option.correct { background: #E6F9F1; border-color: var(--slack-green); color: var(--slack-green); }
+    .quiz-option.wrong { background: #FDE8EE; border-color: var(--slack-red); color: var(--slack-red); }
+    .quiz-option.reveal-correct { background: #E6F9F1; border-color: var(--slack-green); color: var(--slack-green); }
+    .quiz-option.disabled { cursor: not-allowed; opacity: 0.6; }
+
+    .quiz-feedback {
+      width: 100%;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+      display: none;
+    }
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.correct { background: #E6F9F1; color: #1A7F54; }
+    .quiz-feedback.wrong { background: #FDE8EE; color: #B01043; }
+
+    .next-btn {
+      width: 100%;
+      background: var(--slack-purple);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.2s, transform 0.1s;
+      display: none;
+    }
+    .next-btn.show { display: block; }
+    .next-btn:active { transform: scale(0.98); background: var(--slack-aubergine); }
+
+    /* ─── Mode Toggle ─── */
+    .mode-toggle {
+      display: flex;
+      background: white;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 0;
+      box-shadow: 0 2px 8px rgba(74,21,75,0.1);
+      width: 100%;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-mid);
+      transition: all 0.2s;
+    }
+    .mode-btn.active { background: var(--slack-purple); color: white; }
+
+    /* ─── Results Screen ─── */
+    #results {
+      background: var(--body-bg);
+      justify-content: center;
+      gap: 20px;
+      padding: 40px 20px 100px;
+    }
+    .results-icon {
+      font-size: 72px;
+      line-height: 1;
+    }
+    .results-title {
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+    }
+    .results-score {
+      background: linear-gradient(135deg, var(--slack-purple), #7B2D8B);
+      color: white;
+      border-radius: var(--radius);
+      padding: 24px 40px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .results-score .big { font-size: 56px; font-weight: 800; line-height: 1; }
+    .results-score .out-of { font-size: 16px; opacity: 0.7; margin-top: 4px; }
+    .results-detail {
+      width: 100%;
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .results-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #F0E8F0;
+      font-size: 15px;
+    }
+    .results-row:last-child { border-bottom: none; }
+    .results-row .val { font-weight: 700; }
+    .results-row .val.green { color: var(--slack-green); }
+    .results-row .val.red { color: var(--slack-red); }
+
+    /* ─── Buttons ─── */
+    .btn-primary {
+      width: 100%;
+      background: var(--slack-purple);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:active { transform: scale(0.98); background: var(--slack-aubergine); }
+    .btn-secondary {
+      width: 100%;
+      background: white;
+      color: var(--slack-purple);
+      border: 2px solid var(--slack-purple);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:active { transform: scale(0.98); }
+
+    /* ─── What's New Screen ─── */
+    #whats-new {
+      background: var(--body-bg);
+      padding-top: 0;
+      padding-bottom: 100px;
+    }
+    .news-header {
+      width: 100%;
+      background: linear-gradient(160deg, var(--slack-aubergine), var(--slack-purple));
+      padding: 56px 20px 24px;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+    .news-header h2 { color: white; font-size: 26px; font-weight: 700; }
+    .news-header p  { color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 4px; }
+    .news-updated {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: white;
+      margin-top: 10px;
+    }
+    .news-body {
+      width: 100%;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .news-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-mid);
+      padding: 4px 0 2px;
+    }
+    .news-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .news-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px 16px 12px;
+    }
+    .news-tag-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .news-card-meta { flex: 1; }
+    .news-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .news-card-date {
+      font-size: 12px;
+      color: var(--text-mid);
+    }
+    .news-card-body {
+      font-size: 14px;
+      color: var(--text-mid);
+      line-height: 1.55;
+      padding: 0 16px 16px;
+    }
+    .news-pill {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+    .news-pill.security  { background: #FDE8EE; color: #B01043; }
+    .news-pill.admin     { background: #E8F8FE; color: #0A6EBD; }
+    .news-pill.feature   { background: #E6F9F1; color: #1A7F54; }
+    .news-pill.release   { background: #FEF8E8; color: #7A4F00; }
+    .news-pill.developer { background: #F5EDF5; color: #4A154B; }
+    .news-source-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-top: 1px solid #F0E8F0;
+      font-size: 12px;
+      color: var(--slack-purple);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* ─── Bottom nav ─── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-top: 1px solid #E8D5E8;
+      display: flex;
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .nav-icon { font-size: 22px; }
+    .nav-label { font-size: 10px; font-weight: 600; color: var(--text-mid); }
+    .nav-item.active .nav-label { color: var(--slack-purple); }
+
+    /* ─── Leaderboard / Progress screen ─── */
+    #progress {
+      background: var(--body-bg);
+      padding-top: 0;
+    }
+    .prog-header {
+      width: 100%;
+      background: linear-gradient(160deg, var(--slack-aubergine), var(--slack-purple));
+      padding: 56px 20px 24px;
+      margin-bottom: 20px;
+    }
+    .prog-header h2 { color: white; font-size: 26px; font-weight: 700; }
+    .prog-header p { color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 4px; }
+    .prog-body { width: 100%; padding: 0 0 100px; display: flex; flex-direction: column; gap: 16px; }
+    .prog-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .prog-card h3 { font-size: 14px; font-weight: 700; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .achievement {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #F0E8F0;
+    }
+    .achievement:last-child { border-bottom: none; }
+    .ach-icon { font-size: 28px; }
+    .ach-info .ach-name { font-size: 15px; font-weight: 600; }
+    .ach-info .ach-desc { font-size: 13px; color: var(--text-mid); }
+    .ach-locked { opacity: 0.35; filter: grayscale(1); }
+    .total-score-display {
+      text-align: center;
+      padding: 8px 0;
+    }
+    .total-score-display .big { font-size: 48px; font-weight: 800; color: var(--slack-purple); }
+    .total-score-display .lbl { font-size: 14px; color: var(--text-mid); }
+    .cat-prog-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    }
+    .cat-prog-row:last-child { margin-bottom: 0; }
+    .cat-prog-icon { font-size: 22px; width: 32px; text-align: center; }
+    .cat-prog-info { flex: 1; }
+    .cat-prog-name { font-size: 14px; font-weight: 600; }
+    .cat-prog-bar-bg { background: #F0E8F0; border-radius: 4px; height: 6px; margin-top: 4px; }
+    .cat-prog-bar-fill { background: var(--slack-purple); border-radius: 4px; height: 6px; transition: width 0.6s; }
+    .cat-prog-pct { font-size: 12px; font-weight: 700; color: var(--slack-purple); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME SCREEN -->
+  <div class="screen active" id="home">
+    <div class="home-logo">🔐</div>
+    <h1 class="home-title">Slack Security<br>Challenge</h1>
+    <p class="home-subtitle">Master Slack security through interactive flashcards and quizzes</p>
+    <div class="home-stats">
+      <div class="stat-pill">
+        <div class="num" id="stat-cards">40</div>
+        <div class="lbl">Cards</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num">6</div>
+        <div class="lbl">Topics</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num" id="stat-score">0</div>
+        <div class="lbl">Score</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="showScreen('categories')" style="max-width:280px">Start Learning</button>
+    <button class="btn-share" onclick="shareApp()">📤 Share with friends</button>
+  </div>
+
+  <!-- CATEGORIES SCREEN -->
+  <div class="screen" id="categories">
+    <div class="cat-header">
+      <h2>Choose a Topic</h2>
+      <p>Select a security category to study</p>
+    </div>
+    <div class="cat-grid" id="cat-grid"></div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="game">
+    <div class="game-topbar">
+      <div class="back-btn" onclick="showScreen('categories')">‹</div>
+      <div class="game-info">
+        <div class="game-cat-name" id="game-cat-name">Authentication</div>
+        <div class="game-progress-text" id="game-progress">Card 1 of 7</div>
+      </div>
+      <div class="score-badge" id="game-score">Score: 0</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="game-content" id="game-content"></div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div class="screen" id="results">
+    <div class="results-icon" id="results-icon">🎉</div>
+    <div class="results-title" id="results-title">Nice Work!</div>
+    <div class="results-score">
+      <div class="big" id="results-pct">0%</div>
+      <div class="out-of" id="results-out-of">0 of 0 correct</div>
+    </div>
+    <div class="results-detail">
+      <div class="results-row"><span>Correct</span><span class="val green" id="r-correct">0</span></div>
+      <div class="results-row"><span>Incorrect</span><span class="val red" id="r-wrong">0</span></div>
+      <div class="results-row"><span>Points Earned</span><span class="val" id="r-points">0</span></div>
+    </div>
+    <button class="btn-primary" onclick="retryCategory()">Try Again</button>
+    <button class="btn-secondary" onclick="showScreen('categories')">Back to Topics</button>
+  </div>
+
+  <!-- PROGRESS SCREEN -->
+  <div class="screen" id="progress">
+    <div class="prog-header">
+      <h2>My Progress</h2>
+      <p>Your learning journey so far</p>
+    </div>
+    <div class="prog-body">
+      <div class="prog-card">
+        <h3>Total Score</h3>
+        <div class="total-score-display">
+          <div class="big" id="total-score-display">0</div>
+          <div class="lbl">points earned</div>
+        </div>
+      </div>
+      <div class="prog-card">
+        <h3>Topic Progress</h3>
+        <div id="cat-progress-list"></div>
+      </div>
+      <div class="prog-card">
+        <h3>Achievements</h3>
+        <div id="achievements-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT'S NEW SCREEN -->
+  <div class="screen" id="whats-new">
+    <div class="news-header">
+      <h2>What's New</h2>
+      <p>Latest Slack security &amp; admin updates</p>
+      <div class="news-updated" id="news-updated-date">🔄 Updated weekly</div>
+    </div>
+    <div class="news-body" id="news-body"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="navTo('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Home</div>
+    </div>
+    <div class="nav-item" id="nav-categories" onclick="navTo('categories')">
+      <div class="nav-icon">📚</div>
+      <div class="nav-label">Topics</div>
+    </div>
+    <div class="nav-item" id="nav-whats-new" onclick="navTo('whats-new')">
+      <div class="nav-icon">🆕</div>
+      <div class="nav-label">What's New</div>
+    </div>
+    <div class="nav-item" id="nav-progress" onclick="navTo('progress')">
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">Progress</div>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  DATA — sourced from help.slack.com
+// ─────────────────────────────────────────────
+const categories = [
+  {
+    id: 'auth',
+    name: 'Authentication',
+    icon: '🔑',
+    color: '#4A154B',
+    bg: '#F5EDF5',
+    source: 'help.slack.com/articles/115004155306',
+    cards: [
+      {
+        q: 'What is Two-Factor Authentication (2FA) in Slack?',
+        a: 'A security feature requiring users to enter both their password and a time-based verification code when signing in.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'A security feature requiring users to enter both their password and a time-based verification code when signing in.',
+          'A security feature requiring users to enter their password twice to confirm their identity when signing in.',
+          'A security feature that sends a one-time link to a user\'s email address instead of using a password.',
+          'A security feature that locks an account after three failed password attempts.'
+        ]
+      },
+      {
+        q: 'Can a Slack admin make 2FA mandatory for all workspace members?',
+        a: 'Yes — workspace owners and admins can require all members to enable 2FA before they can access the workspace.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Yes — workspace owners and admins can require all members to enable 2FA before they can access the workspace.',
+          'Yes — but only for members on Business+ or Enterprise plans, not free workspaces.',
+          'No — 2FA is always optional and each member must enable it themselves.',
+          'No — only Slack\'s trust and safety team can enforce 2FA across a workspace.'
+        ]
+      },
+      {
+        q: 'What is SAML Single Sign-On (SSO) in Slack?',
+        a: 'An authentication method that lets employees sign in to Slack using their company identity provider, removing the need for a separate Slack password.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'An authentication method that lets employees sign in to Slack using their company identity provider, removing the need for a separate Slack password.',
+          'An authentication method that lets employees sign in to Slack using their Google or Apple account instead of a Slack password.',
+          'An authentication method that generates a temporary one-time password emailed to users each time they sign in.',
+          'An authentication method that requires employees to approve each sign-in from a separate mobile device.'
+        ]
+      },
+      {
+        q: 'Who can configure Single Sign-On in a Slack Enterprise Grid?',
+        a: 'Only Org Owners can configure SSO — it is the most restricted authentication setting in Enterprise Grid.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Only Org Owners can configure SSO — it is the most restricted authentication setting in Enterprise Grid.',
+          'Only Workspace Admins can configure SSO, as they manage day-to-day authentication settings.',
+          'Both Org Owners and Workspace Owners can configure SSO independently for their own workspaces.',
+          'Any member with the Security Admin system role can configure SSO across the organisation.'
+        ]
+      },
+      {
+        q: 'What is a session duration limit in Slack?',
+        a: 'A setting that automatically signs members out after a set period, reducing the risk of unauthorised access on shared or unattended devices.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'A setting that automatically signs members out after a set period, reducing the risk of unauthorised access on shared or unattended devices.',
+          'A setting that prevents members from staying connected in more than one Slack workspace at the same time.',
+          'A setting that limits how long a member can remain active in a single channel before being automatically muted.',
+          'A setting that restricts how many hours per day a member can send messages, enforced by workspace admins.'
+        ]
+      },
+      {
+        q: 'Who can set session duration limits in Slack?',
+        a: 'Workspace owners and admins can set session duration limits to control how long members stay signed in.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Workspace owners and admins can set session duration limits to control how long members stay signed in.',
+          'Only Org Owners on Enterprise Grid can set session duration limits across all workspaces.',
+          'Any member can set their own session duration limit from their personal account settings.',
+          'Session duration limits are set by Slack automatically and cannot be changed by workspace admins.'
+        ]
+      },
+      {
+        q: 'Why is 2FA important for Slack accounts?',
+        a: 'Even if a password is compromised, an attacker still cannot sign in without also having the second factor, reducing account takeover risk.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Even if a password is compromised, an attacker still cannot sign in without also having the second factor, reducing account takeover risk.',
+          'It prevents members from signing in on more than one device at a time, limiting unauthorised sharing of accounts.',
+          'It encrypts all messages sent from the account so that only the verified user can read them.',
+          'It requires admins to manually approve each new sign-in attempt, giving them full control over access.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'access',
+    name: 'Access Control',
+    icon: '🛡️',
+    color: '#E01E5A',
+    bg: '#FDE8EE',
+    source: 'help.slack.com/articles/201314026',
+    cards: [
+      {
+        q: 'What are the three core member roles in a Slack workspace?',
+        a: 'Owner/Admin, Member, and Guest. Enterprise Grid adds Org Owner and Org Admin above Workspace Owner.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Owner/Admin, Member, and Guest. Enterprise Grid adds Org Owner and Org Admin above Workspace Owner.',
+          'Primary Owner, Admin, and Member. Enterprise Grid adds a Super Admin role above all others.',
+          'Owner, Manager, and Member. Enterprise Grid adds a Global Admin role that sits above all workspace roles.',
+          'Admin, Member, and Viewer. Enterprise Grid adds Org Owner and Org Admin above Workspace Owner.'
+        ]
+      },
+      {
+        q: 'What is the difference between a single-channel guest and a multi-channel guest?',
+        a: 'A single-channel guest can only access one specific channel. A multi-channel guest can be added to several channels but still cannot access public channels freely.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'A single-channel guest can only access one specific channel. A multi-channel guest can be added to several channels but still cannot access public channels freely.',
+          'A single-channel guest can read messages but not post. A multi-channel guest can both read and post across any channels they are added to.',
+          'A single-channel guest is a temporary account that expires after 30 days. A multi-channel guest has no expiry and can access any public channel.',
+          'A single-channel guest is for external users only. A multi-channel guest is for internal contractors who need access across departments.'
+        ]
+      },
+      {
+        q: 'Why should you use guest accounts for contractors, interns, and clients?',
+        a: 'Guest accounts restrict access to only the specific channels needed, preventing exposure to sensitive conversations and workspace-wide data.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Guest accounts restrict access to only the specific channels needed, preventing exposure to sensitive conversations and workspace-wide data.',
+          'Guest accounts are cheaper than full member seats, so they reduce the cost of adding short-term workers to the workspace.',
+          'Guest accounts automatically expire after 90 days, ensuring short-term workers are removed without admin action.',
+          'Guest accounts prevent contractors from downloading files, reducing the risk of data being copied outside the organisation.'
+        ]
+      },
+      {
+        q: 'What should you do when a team member leaves your organisation?',
+        a: 'Deactivate their Slack account immediately. On Business+ and Enterprise plans, SCIM provisioning can automate this process.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Deactivate their Slack account immediately. On Business+ and Enterprise plans, SCIM provisioning can automate this process.',
+          'Remove them from all channels first, then wait for their account to expire automatically after 30 days of inactivity.',
+          'Transfer ownership of their messages and files to their manager, then delete their account at the end of the month.',
+          'Change their role from Member to Guest so they retain read access but can no longer post messages.'
+        ]
+      },
+      {
+        q: 'What is SCIM provisioning in Slack?',
+        a: 'A protocol that syncs your company directory with Slack to automatically provision or deactivate accounts when employees join or leave.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'A protocol that syncs your company directory with Slack to automatically provision or deactivate accounts when employees join or leave.',
+          'A protocol that backs up Slack messages and files to your company\'s internal directory on a scheduled basis.',
+          'A protocol that scans Slack for sensitive content and automatically removes messages that violate data policies.',
+          'A protocol that enforces password complexity rules across Slack by syncing with your company\'s password manager.'
+        ]
+      },
+      {
+        q: 'Who can deactivate a member\'s account in Slack?',
+        a: 'Only Workspace Owners and Admins can deactivate member accounts.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Only Workspace Owners and Admins can deactivate member accounts.',
+          'Any member can deactivate their own account, but only Admins can deactivate other members\' accounts.',
+          'Only the Primary Workspace Owner can deactivate accounts — Admins must request this from the Owner.',
+          'Workspace Owners, Admins, and members with the Security Admin system role can all deactivate accounts.'
+        ]
+      },
+      {
+        q: 'Who can change another member\'s role in Slack?',
+        a: 'Only Workspace Owners and Admins can change member roles.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Only Workspace Owners and Admins can change member roles.',
+          'Any Admin can change roles, but only the Primary Owner can promote someone to Admin.',
+          'Workspace Owners, Admins, and members assigned the Users Admin system role can all change member roles.',
+          'Only the Primary Workspace Owner can change roles — this permission cannot be delegated to Admins.'
+        ]
+      },
+      {
+        q: 'Who can reset all members\' passwords in Slack?',
+        a: 'Only a Workspace Owner can enable this — it requires changing the default setting and is not available to Admins.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Only a Workspace Owner can enable this — it requires changing the default setting and is not available to Admins.',
+          'Any Workspace Admin can reset passwords for individual members from the admin dashboard.',
+          'Workspace Owners and Admins can both reset passwords, but Admins are limited to resetting guest accounts only.',
+          'Only Slack\'s support team can initiate a bulk password reset — workspace owners must submit a request.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'apps',
+    name: 'App Permissions',
+    icon: '⚙️',
+    color: '#36C5F0',
+    bg: '#E8F8FE',
+    source: 'help.slack.com/articles/115004155306',
+    cards: [
+      {
+        q: 'By default, who can install apps in a Slack workspace?',
+        a: 'Any member can install apps by default. Workspace owners can restrict this so only admins or approved apps are allowed.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Any member can install apps by default. Workspace owners can restrict this so only admins or approved apps are allowed.',
+          'Only Workspace Admins can install apps by default — members must submit a request for an app to be added.',
+          'Only the Primary Workspace Owner can install apps by default, to ensure all integrations are reviewed.',
+          'Guests and members cannot install apps by default — this permission is reserved for Admins and Owners only.'
+        ]
+      },
+      {
+        q: 'What is Slack App Approval?',
+        a: 'A workspace setting that requires admin review and approval before any new app can be installed.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'A workspace setting that requires admin review and approval before any new app can be installed.',
+          'A Slack-run certification process that verifies an app meets security standards before it appears in the App Directory.',
+          'A setting that automatically scans installed apps each month and removes any that have not been used recently.',
+          'A notification system that alerts members when a new app has been installed so they can flag concerns to an admin.'
+        ]
+      },
+      {
+        q: 'Who can turn on App Approval in Slack?',
+        a: 'A Workspace Owner must change the default setting to enable App Approval — Admins cannot do this on their own.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'A Workspace Owner must change the default setting to enable App Approval — Admins cannot do this on their own.',
+          'Any Workspace Admin can turn on App Approval from the admin settings panel at any time.',
+          'Both Workspace Owners and Admins can turn on App Approval independently from their own settings.',
+          'App Approval is enabled by default for all paid plans and can only be turned off by a Workspace Owner.'
+        ]
+      },
+      {
+        q: 'Who can set app management policies in Enterprise Grid?',
+        a: 'Only Org Owners and Org Admins can set app management policies that apply across the entire Enterprise Grid organisation.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Only Org Owners and Org Admins can set app management policies that apply across the entire Enterprise Grid organisation.',
+          'Workspace Owners within Enterprise Grid can each set their own app management policies independently.',
+          'Any member assigned the Security Admin system role can set org-wide app management policies.',
+          'Org Owners, Org Admins, and Workspace Owners can all set app policies, but Workspace Owners are limited to their own workspace.'
+        ]
+      },
+      {
+        q: 'Why is it risky to allow all members to install apps?',
+        a: 'Third-party apps can request broad access to messages and files. Unvetted apps may have excessive permissions or expose workspace data.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Third-party apps can request broad access to messages and files. Unvetted apps may have excessive permissions or expose workspace data.',
+          'Allowing members to install apps increases Slack\'s storage usage, which can slow down the workspace for everyone.',
+          'Members may install duplicate apps that conflict with each other, causing message delivery failures across channels.',
+          'Unreviewed apps may send members too many notifications, reducing productivity and increasing distraction.'
+        ]
+      },
+      {
+        q: 'What is an anomaly event in Slack\'s audit logs?',
+        a: 'A flag for unexpected or suspicious behaviour — such as an app accessing unusual data volumes or a user signing in from an unexpected location.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'A flag for unexpected or suspicious behaviour — such as an app accessing unusual data volumes or a user signing in from an unexpected location.',
+          'A flag triggered when a member sends more than 500 messages in a single day, indicating potential spam activity.',
+          'A flag raised when a new app is installed without going through the App Approval process.',
+          'A flag that appears when a workspace admin makes changes to retention or export settings outside business hours.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'data',
+    name: 'Data Security',
+    icon: '🗄️',
+    color: '#2BAC76',
+    bg: '#E6F9F1',
+    source: 'help.slack.com/articles/201314026',
+    cards: [
+      {
+        q: 'Who can export data from Slack conversations?',
+        a: 'Workspace Owners and Admins can export public channel data. Exporting private channels and DMs requires the owner to change the default setting.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Workspace Owners and Admins can export public channel data. Exporting private channels and DMs requires the owner to change the default setting.',
+          'Any member can export messages from channels they belong to, but only Admins can export data from channels they are not in.',
+          'Only the Primary Workspace Owner can export data — this permission cannot be delegated to Admins or system roles.',
+          'Workspace Owners can export all data by default, including private channels and DMs, without changing any settings.'
+        ]
+      },
+      {
+        q: 'What is a message retention policy in Slack?',
+        a: 'A setting that automatically deletes messages after a specified period for data governance purposes.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'A setting that automatically deletes messages after a specified period for data governance purposes.',
+          'A setting that archives messages older than a set date so they can still be searched but are hidden from the main channel view.',
+          'A setting that prevents members from editing or deleting their own messages after they have been sent.',
+          'A setting that backs up all messages to an external storage location after a specified number of days.'
+        ]
+      },
+      {
+        q: 'Who controls file retention settings in Enterprise Grid?',
+        a: 'File retention is restricted to Org Owners and Org Admins — Workspace Owners cannot change file retention on their own.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'File retention is restricted to Org Owners and Org Admins — Workspace Owners cannot change file retention on their own.',
+          'Workspace Owners control file retention within their own workspace, while Org Owners manage it across the organisation.',
+          'The Export Admin system role controls file retention, as file management falls under their data responsibilities.',
+          'Any Workspace Admin can set file retention policies independently for the channels they manage.'
+        ]
+      },
+      {
+        q: 'What is a Legal Hold in Slack?',
+        a: 'An Enterprise Grid feature that preserves messages and files for specific users or channels, preventing deletion — used for legal discovery.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'An Enterprise Grid feature that preserves messages and files for specific users or channels, preventing deletion — used for legal discovery.',
+          'An Enterprise Grid feature that restricts a member\'s ability to send messages while a compliance investigation is under way.',
+          'An Enterprise Grid feature that automatically exports a user\'s message history when their account is deactivated.',
+          'An Enterprise Grid feature that flags messages containing legal keywords and routes them to the Legal Holds Admin for review.'
+        ]
+      },
+      {
+        q: 'What are Slack\'s specialised system roles for data protection?',
+        a: 'Enterprise Grid provides DLP Admin, Legal Holds Admin, Export Admin, and Audit Logs Admin — allowing least-privilege delegation without full admin rights.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Enterprise Grid provides DLP Admin, Legal Holds Admin, Export Admin, and Audit Logs Admin — allowing least-privilege delegation without full admin rights.',
+          'Enterprise Grid provides Security Admin, Compliance Officer, Data Steward, and Records Manager as specialised protection roles.',
+          'Enterprise Grid provides Export Admin, Channel Admin, File Admin, and Message Admin — each managing a specific type of workspace content.',
+          'Enterprise Grid provides DLP Admin, Retention Admin, Archive Admin, and Encryption Admin for granular data control.'
+        ]
+      },
+      {
+        q: 'Can Slack admins control whether member email addresses are visible to others?',
+        a: 'Yes — admins can control whether email addresses are shown in member profiles across the workspace.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Yes — admins can control whether email addresses are shown in member profiles across the workspace.',
+          'No — email addresses are always visible to all members so that colleagues can contact each other directly.',
+          'Yes — but only for guest accounts. Full members\' email addresses are always visible to other members.',
+          'No — email visibility is controlled by each member individually from their own profile privacy settings.'
+        ]
+      },
+      {
+        q: 'What does DLP stand for in Slack\'s Enterprise security model?',
+        a: 'Data Loss Prevention — the DLP Admin role manages policies to stop sensitive data such as PII from being shared inappropriately.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Data Loss Prevention — the DLP Admin role manages policies to stop sensitive data such as PII from being shared inappropriately.',
+          'Data Lifecycle Policy — the DLP Admin role manages how long different types of data are retained before deletion.',
+          'Directory Linking Protocol — the DLP Admin role manages how Slack connects to external identity and directory services.',
+          'Data Lock Protocol — the DLP Admin role manages encryption keys that control access to stored workspace data.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'monitoring',
+    name: 'Monitoring & Audit',
+    icon: '🔍',
+    color: '#ECB22E',
+    bg: '#FEF8E8',
+    source: 'help.slack.com/articles/360000394286',
+    cards: [
+      {
+        q: 'What are Audit Logs in Slack?',
+        a: 'A record of significant events across your organisation — such as sign-ins, permission changes, and app installs — available on Enterprise Grid.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'A record of significant events across your organisation — such as sign-ins, permission changes, and app installs — available on Enterprise Grid.',
+          'A daily summary report emailed to workspace admins listing all messages sent and files shared in the past 24 hours.',
+          'A log of all messages that were edited or deleted by members, available on paid Slack plans.',
+          'A record of channel creation, archiving, and name changes — available to all Workspace Admins on any Slack plan.'
+        ]
+      },
+      {
+        q: 'Who can access audit logs in a Slack Enterprise Grid?',
+        a: 'Org Owners, Org Admins, and members assigned the Audit Logs Admin system role.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Org Owners, Org Admins, and members assigned the Audit Logs Admin system role.',
+          'Any Workspace Owner or Admin within Enterprise Grid can access audit logs for their own workspace.',
+          'Only the Primary Org Owner can access audit logs — access cannot be delegated to other roles.',
+          'Org Owners, Workspace Owners, and any member with the Security Admin system role.'
+        ]
+      },
+      {
+        q: 'What is the Slack Audit Log API?',
+        a: 'An API that lets Enterprise Grid organisations programmatically retrieve audit events for integration with SIEM tools.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'An API that lets Enterprise Grid organisations programmatically retrieve audit events for integration with SIEM tools.',
+          'An API that lets admins schedule automated exports of message history from selected channels.',
+          'An API that lets Workspace Owners receive real-time notifications whenever a member changes their profile settings.',
+          'An API that lets third-party compliance tools push audit policies into Slack to automatically enforce retention rules.'
+        ]
+      },
+      {
+        q: 'What is a SIEM tool and why integrate one with Slack?',
+        a: 'Security Information and Event Management software that aggregates logs from multiple systems to enable automated alerting on suspicious activity.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Security Information and Event Management software that aggregates logs from multiple systems to enable automated alerting on suspicious activity.',
+          'Shared Identity and Endpoint Management software that manages device access and enforces login policies across cloud apps.',
+          'Secure Infrastructure and Encryption Management software that handles key management for encrypted communications.',
+          'Session Intelligence and Engagement Monitoring software that tracks how long members spend in Slack each day.'
+        ]
+      },
+      {
+        q: 'What analytics are available to admins on paid Slack plans?',
+        a: 'Admins can view dashboards showing member activity, channel engagement, and usage patterns to help spot unusual behaviour.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Admins can view dashboards showing member activity, channel engagement, and usage patterns to help spot unusual behaviour.',
+          'Admins can view the full message history of any channel, including private channels, through the analytics dashboard.',
+          'Admins can view a live feed of all messages being sent across the workspace to monitor content in real time.',
+          'Admins can view each member\'s sent message content alongside timestamps and device information.'
+        ]
+      },
+      {
+        q: 'What should admins do to monitor invitation activity?',
+        a: 'Periodically review both pending and accepted invitations to catch unauthorised access, and consider requiring admin approval for all new invitations.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Periodically review both pending and accepted invitations to catch unauthorised access, and consider requiring admin approval for all new invitations.',
+          'Disable all member-sent invitations permanently and only allow admins to add new users directly from the admin panel.',
+          'Set invitations to expire after 24 hours so that any unaccepted invites are automatically cancelled.',
+          'Review only declined invitations, as accepted ones have already been verified by the member who sent them.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'connect',
+    name: 'External Collaboration',
+    icon: '🌐',
+    color: '#7B2D8B',
+    bg: '#F5EDF5',
+    source: 'help.slack.com/articles/115004155306',
+    cards: [
+      {
+        q: 'What is Slack Connect?',
+        a: 'A feature that allows collaboration with people at other organisations through shared channels, without giving them full membership in your workspace.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'A feature that allows collaboration with people at other organisations through shared channels, without giving them full membership in your workspace.',
+          'A feature that allows members to connect their personal Slack accounts to their work workspace for easier switching.',
+          'A feature that lets workspace admins link two internal workspaces together so members can message across both.',
+          'A feature that provides a public-facing Slack channel where anyone on the internet can send messages to your team.'
+        ]
+      },
+      {
+        q: 'Why is Slack Connect more secure than inviting external users as full members?',
+        a: 'External collaborators are limited to shared channels only and cannot access other channels, files, or workspace settings.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'External collaborators are limited to shared channels only and cannot access other channels, files, or workspace settings.',
+          'Slack Connect encrypts all messages end-to-end, while standard guest accounts do not have the same level of encryption.',
+          'Slack Connect requires both organisations to verify each other\'s identity before a shared channel can be created.',
+          'External collaborators in Slack Connect can only read messages and cannot post, keeping communication one-directional.'
+        ]
+      },
+      {
+        q: 'Who can invite single-channel guests to private channels?',
+        a: 'Only Workspace Owners and Admins can invite single-channel guests into private channels.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Only Workspace Owners and Admins can invite single-channel guests into private channels.',
+          'Any member who is already in the private channel can invite a single-channel guest to join them.',
+          'Only the Primary Workspace Owner can invite guests to private channels — Admins must escalate this request.',
+          'Workspace Owners, Admins, and members with the Users Admin system role can all invite guests to private channels.'
+        ]
+      },
+      {
+        q: 'What can guest users NOT do in Slack?',
+        a: 'Guests cannot join public channels on their own, use @everyone, or access workspace-wide features. Single-channel guests also cannot create channels.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'Guests cannot join public channels on their own, use @everyone, or access workspace-wide features. Single-channel guests also cannot create channels.',
+          'Guests cannot send direct messages to other members — they can only post in the channels they have been added to.',
+          'Guests cannot view message history older than 90 days and cannot download any files shared in their channels.',
+          'Guests cannot use emoji reactions or edit their own messages, and they cannot pin messages in their channels.'
+        ]
+      },
+      {
+        q: 'What is domain claiming in Slack Enterprise Grid?',
+        a: 'A feature that lets an organisation claim ownership of an email domain, ensuring all members with that domain are managed centrally.',
+        source: 'Slack Help: Permissions in a Slack workspace',
+        options: [
+          'A feature that lets an organisation claim ownership of an email domain, ensuring all members with that domain are managed centrally.',
+          'A feature that lets an organisation reserve a custom Slack subdomain so their workspace URL matches their company name.',
+          'A feature that blocks members from signing up to external Slack workspaces using their company email address.',
+          'A feature that automatically verifies the email address of every new member before their account is activated.'
+        ]
+      },
+      {
+        q: 'Why should you verify ownership of approved email domains in Slack?',
+        a: 'Without verification, enabling auto-join for a domain you do not own could allow people outside your organisation to access your workspace.',
+        source: 'Slack Help: Best practices for Slack security',
+        options: [
+          'Without verification, enabling auto-join for a domain you do not own could allow people outside your organisation to access your workspace.',
+          'Without verification, members using that domain cannot enable two-factor authentication on their accounts.',
+          'Without verification, messages sent to members of that domain are not encrypted in transit.',
+          'Without verification, Slack will not allow you to set a retention policy for channels used by members of that domain.'
+        ]
+      }
+    ]
+  }
+];
+
+// ─────────────────────────────────────────────
+//  WHAT'S NEW DATA
+//  Updated weekly — sourced from slack.com/release-notes and docs.slack.dev/changelog
+// ─────────────────────────────────────────────
+const whatsNewData = {
+  lastUpdated: '2 June 2026',
+  sections: [
+    {
+      label: 'Security Updates',
+      items: [
+        {
+          icon: '🔒',
+          iconBg: '#FDE8EE',
+          tag: 'security',
+          tagLabel: 'Security',
+          title: 'PKCE is now generally available for Slack apps',
+          date: '30 March 2026',
+          summary: 'Proof Key for Code Exchange (PKCE) is now GA. It removes the need to embed a client_secret in public clients, making OAuth flows significantly more secure. Enabling PKCE is a one-way operation — once enabled, your app is permanently marked as a public client. Refresh tokens expire after 30 days.',
+          source: 'Slack Developer Changelog',
+          sourceUrl: 'https://docs.slack.dev/changelog'
+        },
+        {
+          icon: '🛡️',
+          iconBg: '#FDE8EE',
+          tag: 'security',
+          tagLabel: 'Security',
+          title: 'Slack desktop app security improvements (v4.48.102)',
+          date: '17 March 2026',
+          summary: 'The latest Slack desktop app release (v4.48.102) includes security improvements. Slack recommends all users update. Three prior releases in February also included minor security improvements.',
+          source: 'Slack Release Notes',
+          sourceUrl: 'https://slack.com/release-notes/mac'
+        }
+      ]
+    },
+    {
+      label: 'Admin & Permissions',
+      items: [
+        {
+          icon: '⚙️',
+          iconBg: '#E8F8FE',
+          tag: 'admin',
+          tagLabel: 'Admin',
+          title: 'Optional OAuth scopes give admins finer app control',
+          date: '16 March 2026',
+          summary: 'Workspace admins can now pre-approve which optional OAuth scopes are available to users when they install apps. This means admins can allow an app but restrict which permissions it is granted — giving more granular control without blocking the app entirely.',
+          source: 'Slack Developer Changelog',
+          sourceUrl: 'https://docs.slack.dev/changelog'
+        },
+        {
+          icon: '🏢',
+          iconBg: '#E8F8FE',
+          tag: 'admin',
+          tagLabel: 'Admin',
+          title: 'Slack for Mac now available in PKG format for enterprise deployment',
+          date: '22 October 2024',
+          summary: 'Slack for macOS is now available as a PKG installer, making it easier for IT teams to deploy and manage Slack across managed devices using tools like Jamf or Mosyle — without requiring users to manually install from the App Store.',
+          source: 'Slack Release Notes',
+          sourceUrl: 'https://slack.com/release-notes/mac'
+        },
+        {
+          icon: '🔑',
+          iconBg: '#E8F8FE',
+          tag: 'admin',
+          tagLabel: 'Admin',
+          title: 'macOS signing certificate company name change',
+          date: '17 February 2025',
+          summary: 'Slack\'s macOS signing certificate changed from "SLACK TECHNOLOGIES INC" to "SLACK TECHNOLOGIES, LLC". Admins who use application allowlists based on the certificate identity (e.g. in MDM or endpoint security tools) should update their policies to reflect this change.',
+          source: 'Slack Release Notes',
+          sourceUrl: 'https://slack.com/release-notes/mac'
+        }
+      ]
+    },
+    {
+      label: 'New Features',
+      items: [
+        {
+          icon: '🤖',
+          iconBg: '#E6F9F1',
+          tag: 'feature',
+          tagLabel: 'Feature',
+          title: 'New Slack MCP Server tools expand data access',
+          date: '13 May 2026',
+          summary: 'Five new tools were added to the Slack MCP Server, including "Read files" (retrieves file metadata and content) and "List channel members". Enterprise admins should review their data-access policies to ensure these new capabilities align with their governance requirements.',
+          source: 'Slack Developer Changelog',
+          sourceUrl: 'https://docs.slack.dev/changelog'
+        },
+        {
+          icon: '🔗',
+          iconBg: '#E6F9F1',
+          tag: 'feature',
+          tagLabel: 'Feature',
+          title: 'SSH/FTP/SFTP links now support domain-level approval',
+          date: '20 September 2021',
+          summary: 'Slack now supports approving SSH, FTP, SFTP, and SMB links at the domain level rather than allowing all such links globally. This reduces risk by letting admins whitelist specific trusted servers rather than enabling broad access to all external protocol links.',
+          source: 'Slack Release Notes',
+          sourceUrl: 'https://slack.com/release-notes/mac'
+        }
+      ]
+    },
+    {
+      label: 'Developer & API',
+      items: [
+        {
+          icon: '🧑‍💻',
+          iconBg: '#F5EDF5',
+          tag: 'developer',
+          tagLabel: 'Developer',
+          title: 'assistant.threads.setStatus scope migration required',
+          date: '5 March 2026',
+          summary: 'The assistant.threads.setStatus API method now accepts either assistant:write or chat:write scope. Slack has announced the assistant:write scope will eventually be removed — developers using this method should migrate to chat:write promptly to avoid future disruption.',
+          source: 'Slack Developer Changelog',
+          sourceUrl: 'https://docs.slack.dev/changelog'
+        },
+        {
+          icon: '📦',
+          iconBg: '#F5EDF5',
+          tag: 'developer',
+          tagLabel: 'Developer',
+          title: 'Slack CLI v4.1.0 adds optional OAuth scope support',
+          date: '19 May 2026',
+          summary: 'Slack CLI v4.1.0 adds support for the new bot_optional and user_optional OAuth scope fields in the app manifest schema. Developers building apps that use optional scopes can now declare them directly in their manifest files.',
+          source: 'Slack Developer Changelog',
+          sourceUrl: 'https://docs.slack.dev/changelog'
+        }
+      ]
+    }
+  ]
+};
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let state = {
+  currentCategory: null,
+  currentCardIndex: 0,
+  mode: 'flashcard', // 'flashcard' | 'quiz'
+  score: 0,
+  sessionCorrect: 0,
+  sessionWrong: 0,
+  sessionPoints: 0,
+  quizAnswered: false,
+  totalScore: parseInt(localStorage.getItem('totalScore') || '0'),
+  catScores: JSON.parse(localStorage.getItem('catScores') || '{}'),
+  achievements: JSON.parse(localStorage.getItem('achievements') || '[]')
+};
+
+function saveState() {
+  localStorage.setItem('totalScore', state.totalScore);
+  localStorage.setItem('catScores', JSON.stringify(state.catScores));
+  localStorage.setItem('achievements', JSON.stringify(state.achievements));
+}
+
+// ─────────────────────────────────────────────
+//  NAVIGATION
+// ─────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navMap = { home: 'nav-home', categories: 'nav-categories', progress: 'nav-progress', 'whats-new': 'nav-whats-new' };
+  if (navMap[id]) document.getElementById(navMap[id]).classList.add('active');
+  if (id === 'progress') renderProgress();
+  if (id === 'home') updateHomeStats();
+  if (id === 'whats-new') renderWhatsNew();
+}
+
+function navTo(id) { showScreen(id); }
+
+function shareApp() {
+  const url = 'https://demojvn.github.io/slack-security-game';
+  const text = '🔐 Test your Slack security knowledge with this free flashcard game!';
+  if (navigator.share) {
+    navigator.share({ title: 'Slack Security Challenge', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Link copied to clipboard!\n\n' + url);
+    }).catch(() => {
+      alert('Share this link with friends:\n\n' + url);
+    });
+  }
+}
+
+function updateHomeStats() {
+  document.getElementById('stat-score').textContent = state.totalScore;
+}
+
+// ─────────────────────────────────────────────
+//  CATEGORIES
+// ─────────────────────────────────────────────
+function renderCategories() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = '';
+  categories.forEach(cat => {
+    const score = state.catScores[cat.id];
+    const pct = score ? Math.round((score.correct / score.total) * 100) : null;
+    const badge = pct !== null ? `<span class="cat-badge">${pct}%</span>` : '';
+    grid.innerHTML += `
+      <div class="cat-card" onclick="startCategory('${cat.id}')">
+        <div class="cat-icon" style="background:${cat.bg}; color:${cat.color}">${cat.icon}</div>
+        <div class="cat-info">
+          <div class="cat-name">${cat.name}</div>
+          <div class="cat-count">${cat.cards.length} cards</div>
+        </div>
+        ${badge}
+        <div class="cat-arrow">›</div>
+      </div>
+    `;
+  });
+}
+
+// ─────────────────────────────────────────────
+//  GAME
+// ─────────────────────────────────────────────
+function startCategory(catId) {
+  state.currentCategory = categories.find(c => c.id === catId);
+  state.currentCardIndex = 0;
+  state.sessionCorrect = 0;
+  state.sessionWrong = 0;
+  state.sessionPoints = 0;
+  state.quizAnswered = false;
+  state.mode = 'flashcard';
+
+  document.getElementById('game-cat-name').textContent = state.currentCategory.icon + ' ' + state.currentCategory.name;
+  document.getElementById('game-score').textContent = 'Score: 0';
+
+  showScreen('game');
+  renderGameCard();
+}
+
+function retryCategory() {
+  startCategory(state.currentCategory.id);
+}
+
+function renderGameCard() {
+  const cat = state.currentCategory;
+  const cards = cat.cards;
+  const idx = state.currentCardIndex;
+  const total = cards.length;
+
+  document.getElementById('game-progress').textContent = `Card ${idx + 1} of ${total}`;
+  document.getElementById('progress-fill').style.width = `${((idx) / total) * 100}%`;
+
+  // Scroll back to top of game screen on each new card
+  const gameScreen = document.getElementById('game');
+  gameScreen.scrollTop = 0;
+
+  const content = document.getElementById('game-content');
+
+  // Mode toggle
+  const modeHtml = `
+    <div class="mode-toggle">
+      <button class="mode-btn ${state.mode === 'flashcard' ? 'active' : ''}" onclick="switchMode('flashcard')">📖 Flashcard</button>
+      <button class="mode-btn ${state.mode === 'quiz' ? 'active' : ''}" onclick="switchMode('quiz')">🧩 Quiz</button>
+    </div>
+  `;
+
+  if (state.mode === 'flashcard') {
+    content.innerHTML = modeHtml + renderFlashcard(cards[idx]);
+  } else {
+    content.innerHTML = modeHtml + renderQuiz(cards[idx], cards, idx);
+    state.quizAnswered = false;
+  }
+}
+
+function switchMode(mode) {
+  state.mode = mode;
+  state.quizAnswered = false;
+  renderGameCard();
+}
+
+function renderFlashcard(card) {
+  return `
+    <div class="card-scene">
+      <div class="card-flipper" id="card-flipper" onclick="flipCard()">
+        <div class="card-face card-front">
+          <div class="card-label">Question</div>
+          <div class="card-question">${card.q}</div>
+          <div class="card-hint">Tap to reveal answer</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">Answer</div>
+          <div class="card-answer">${card.a}</div>
+          <div class="card-source">Source: ${card.source}</div>
+        </div>
+      </div>
+    </div>
+    <div class="tap-hint">👆 Tap the card to flip</div>
+    <div style="width:100%;display:flex;gap:10px;margin-top:8px">
+      <button class="btn-secondary" style="flex:1" onclick="prevCard()">‹ Prev</button>
+      <button class="btn-primary" style="flex:1" onclick="nextCard()">Next ›</button>
+    </div>
+  `;
+}
+
+function flipCard() {
+  const flipper = document.getElementById('card-flipper');
+  if (flipper) flipper.classList.toggle('flipped');
+}
+
+function prevCard() {
+  if (state.currentCardIndex > 0) {
+    state.currentCardIndex--;
+    renderGameCard();
+  }
+}
+
+function nextCard() {
+  const total = state.currentCategory.cards.length;
+  if (state.currentCardIndex < total - 1) {
+    state.currentCardIndex++;
+    renderGameCard();
+  } else {
+    showResults();
+  }
+}
+
+// ─────────────────────────────────────────────
+//  QUIZ MODE
+// ─────────────────────────────────────────────
+function generateOptions(correctCard) {
+  return [...correctCard.options].sort(() => Math.random() - 0.5);
+}
+
+function renderQuiz(card, allCards, idx) {
+  const options = generateOptions(card);
+  const optionsHtml = options.map((opt, i) =>
+    `<div class="quiz-option" id="opt-${i}" onclick="checkAnswer(${i}, '${escapeQuotes(opt)}', '${escapeQuotes(card.a)}')">${opt}</div>`
+  ).join('');
+
+  return `
+    <div class="quiz-question">
+      <div class="quiz-q-label">Question ${idx + 1}</div>
+      <div class="quiz-q-text">${card.q}</div>
+    </div>
+    <div class="quiz-options">${optionsHtml}</div>
+    <div class="quiz-feedback" id="quiz-feedback"></div>
+    <button class="next-btn" id="next-btn" onclick="nextCard()">Next →</button>
+  `;
+}
+
+function escapeQuotes(str) {
+  return str.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
+
+function checkAnswer(optIdx, chosen, correct) {
+  if (state.quizAnswered) return;
+  state.quizAnswered = true;
+
+  const isCorrect = chosen === correct || chosen.replace(/&#39;/g, "'").replace(/&quot;/g, '"') === correct;
+  const feedback = document.getElementById('quiz-feedback');
+  const nextBtn = document.getElementById('next-btn');
+
+  // Disable all options
+  document.querySelectorAll('.quiz-option').forEach((el, i) => {
+    el.classList.add('disabled');
+    const optText = el.textContent;
+    if (optText === correct) el.classList.add('reveal-correct');
+  });
+
+  if (isCorrect) {
+    document.getElementById(`opt-${optIdx}`).classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '✅ Correct! +10 points';
+    state.sessionCorrect++;
+    state.sessionPoints += 10;
+    document.getElementById('game-score').textContent = `Score: ${state.sessionPoints}`;
+  } else {
+    document.getElementById(`opt-${optIdx}`).classList.add('wrong');
+    feedback.className = 'quiz-feedback show wrong';
+    feedback.textContent = `❌ Not quite. The correct answer is shown in green.`;
+    state.sessionWrong++;
+  }
+
+  nextBtn.classList.add('show');
+  document.getElementById('progress-fill').style.width =
+    `${((state.currentCardIndex + 1) / state.currentCategory.cards.length) * 100}%`;
+}
+
+// ─────────────────────────────────────────────
+//  RESULTS
+// ─────────────────────────────────────────────
+function showResults() {
+  const total = state.currentCategory.cards.length;
+  const correct = state.sessionCorrect;
+  const pct = state.mode === 'quiz' ? Math.round((correct / total) * 100) : 100;
+
+  // Save scores
+  state.totalScore += state.sessionPoints;
+  state.catScores[state.currentCategory.id] = {
+    correct: state.sessionCorrect,
+    total: state.mode === 'quiz' ? total : 0,
+    points: state.sessionPoints
+  };
+  checkAchievements();
+  saveState();
+
+  // Pick icon
+  let icon = '🎉', title = 'Great Work!';
+  if (pct >= 90) { icon = '🏆'; title = 'Outstanding!'; }
+  else if (pct >= 70) { icon = '🎉'; title = 'Great Work!'; }
+  else if (pct >= 50) { icon = '📚'; title = 'Keep Learning!'; }
+  else { icon = '💪'; title = 'Keep Practising!'; }
+
+  document.getElementById('results-icon').textContent = icon;
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-pct').textContent = state.mode === 'quiz' ? `${pct}%` : '✓';
+  document.getElementById('results-out-of').textContent = state.mode === 'quiz'
+    ? `${correct} of ${total} correct`
+    : `All ${total} cards reviewed`;
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = state.sessionWrong;
+  document.getElementById('r-points').textContent = `+${state.sessionPoints}`;
+
+  showScreen('results');
+}
+
+// ─────────────────────────────────────────────
+//  ACHIEVEMENTS
+// ─────────────────────────────────────────────
+const allAchievements = [
+  { id: 'first', icon: '⭐', name: 'First Steps', desc: 'Complete your first category' },
+  { id: 'perfect', icon: '🏆', name: 'Perfect Score', desc: 'Get 100% in a quiz' },
+  { id: 'allcat', icon: '🎓', name: 'All Topics', desc: 'Complete all 6 categories' },
+  { id: 'score100', icon: '💯', name: 'Century', desc: 'Earn 100 total points' },
+  { id: 'score500', icon: '🚀', name: 'Security Pro', desc: 'Earn 500 total points' }
+];
+
+function checkAchievements() {
+  const earned = state.achievements;
+  if (!earned.includes('first') && Object.keys(state.catScores).length >= 1) earned.push('first');
+  if (!earned.includes('perfect') && state.sessionCorrect === state.currentCategory.cards.length && state.mode === 'quiz') earned.push('perfect');
+  if (!earned.includes('allcat') && Object.keys(state.catScores).length >= categories.length) earned.push('allcat');
+  if (!earned.includes('score100') && state.totalScore >= 100) earned.push('score100');
+  if (!earned.includes('score500') && state.totalScore >= 500) earned.push('score500');
+  state.achievements = earned;
+}
+
+// ─────────────────────────────────────────────
+//  WHAT'S NEW SCREEN
+// ─────────────────────────────────────────────
+function renderWhatsNew() {
+  document.getElementById('news-updated-date').textContent = '🔄 Updated ' + whatsNewData.lastUpdated;
+
+  const body = document.getElementById('news-body');
+  body.innerHTML = whatsNewData.sections.map(section => {
+    const items = section.items.map(item => `
+      <div class="news-card">
+        <div class="news-card-header">
+          <div class="news-tag-icon" style="background:${item.iconBg}">${item.icon}</div>
+          <div class="news-card-meta">
+            <div class="news-pill ${item.tag}">${item.tagLabel}</div>
+            <div class="news-card-title">${item.title}</div>
+            <div class="news-card-date">${item.date}</div>
+          </div>
+        </div>
+        <div class="news-card-body">${item.summary}</div>
+        <a class="news-source-link" href="${item.sourceUrl}" target="_blank" rel="noopener">
+          📎 ${item.source} ↗
+        </a>
+      </div>
+    `).join('');
+    return `
+      <div class="news-section-label">${section.label}</div>
+      ${items}
+    `;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+//  PROGRESS SCREEN
+// ─────────────────────────────────────────────
+function renderProgress() {
+  document.getElementById('total-score-display').textContent = state.totalScore;
+
+  // Category progress
+  const catList = document.getElementById('cat-progress-list');
+  catList.innerHTML = categories.map(cat => {
+    const sc = state.catScores[cat.id];
+    const pct = sc && sc.total > 0 ? Math.round((sc.correct / sc.total) * 100) : 0;
+    const done = !!sc;
+    return `
+      <div class="cat-prog-row">
+        <div class="cat-prog-icon">${cat.icon}</div>
+        <div class="cat-prog-info">
+          <div class="cat-prog-name">${cat.name}</div>
+          <div class="cat-prog-bar-bg">
+            <div class="cat-prog-bar-fill" style="width:${done ? Math.max(pct, 10) : 0}%"></div>
+          </div>
+        </div>
+        <div class="cat-prog-pct">${done ? (sc.total > 0 ? pct + '%' : '✓') : '–'}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Achievements
+  const achList = document.getElementById('achievements-list');
+  achList.innerHTML = allAchievements.map(ach => {
+    const earned = state.achievements.includes(ach.id);
+    return `
+      <div class="achievement ${earned ? '' : 'ach-locked'}">
+        <div class="ach-icon">${ach.icon}</div>
+        <div class="ach-info">
+          <div class="ach-name">${ach.name}</div>
+          <div class="ach-desc">${ach.desc}</div>
+        </div>
+        ${earned ? '<div style="color:#2BAC76;font-weight:700;font-size:18px">✓</div>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+renderCategories();
+updateHomeStats();
+</script>
+</body>
+</html>

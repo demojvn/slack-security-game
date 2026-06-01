@@ -1,0 +1,9 @@
+{
+  "name": "slack-security-game-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "cheerio": "^1.0.0"
+  }
+}
