@@ -563,6 +563,63 @@
       font-weight: 600;
       text-decoration: none;
     }
+    .news-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #F0E8F0;
+    }
+    .news-mark-btn {
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-mid);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .news-mark-btn:active { opacity: 0.6; }
+    .news-card.is-read {
+      opacity: 0.5;
+    }
+    .news-card.is-read .news-card-title {
+      text-decoration: line-through;
+      color: var(--text-mid);
+    }
+    .news-mark-btn.marked {
+      color: var(--slack-green);
+    }
+    .news-unread-badge {
+      background: var(--slack-red);
+      color: white;
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 3px;
+      display: inline-block;
+    }
+    .news-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+    .news-mark-all-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .news-mark-all-btn:active { background: rgba(255,255,255,0.35); }
 
     /* ─── Bottom nav ─── */
     .bottom-nav {
@@ -738,7 +795,10 @@
     <div class="news-header">
       <h2>What's New</h2>
       <p>Latest Slack security &amp; admin updates</p>
-      <div class="news-updated" id="news-updated-date">🔄 Updated weekly</div>
+      <div class="news-header-row">
+        <div class="news-updated" id="news-updated-date">🔄 Updated weekly</div>
+        <button class="news-mark-all-btn" onclick="markAllRead()">Mark all read</button>
+      </div>
     </div>
     <div class="news-body" id="news-body"></div>
   </div>
@@ -754,7 +814,7 @@
       <div class="nav-label">Topics</div>
     </div>
     <div class="nav-item" id="nav-whats-new" onclick="navTo('whats-new')">
-      <div class="nav-icon">🆕</div>
+      <div class="nav-icon">🆕<span class="news-unread-badge" id="unread-badge" style="display:none"></span></div>
       <div class="nav-label">What's New</div>
     </div>
     <div class="nav-item" id="nav-progress" onclick="navTo('progress')">
@@ -1283,6 +1343,7 @@ const whatsNewData = {
       label: 'Security Updates',
       items: [
         {
+          id: 'pkce-ga',
           icon: '🔒',
           iconBg: '#FDE8EE',
           tag: 'security',
@@ -1294,6 +1355,7 @@ const whatsNewData = {
           sourceUrl: 'https://docs.slack.dev/changelog'
         },
         {
+          id: 'desktop-4-48-102',
           icon: '🛡️',
           iconBg: '#FDE8EE',
           tag: 'security',
@@ -1310,6 +1372,7 @@ const whatsNewData = {
       label: 'Admin & Permissions',
       items: [
         {
+          id: 'optional-oauth-scopes',
           icon: '⚙️',
           iconBg: '#E8F8FE',
           tag: 'admin',
@@ -1321,6 +1384,7 @@ const whatsNewData = {
           sourceUrl: 'https://docs.slack.dev/changelog'
         },
         {
+          id: 'mac-pkg-format',
           icon: '🏢',
           iconBg: '#E8F8FE',
           tag: 'admin',
@@ -1332,6 +1396,7 @@ const whatsNewData = {
           sourceUrl: 'https://slack.com/release-notes/mac'
         },
         {
+          id: 'macos-cert-change',
           icon: '🔑',
           iconBg: '#E8F8FE',
           tag: 'admin',
@@ -1348,6 +1413,7 @@ const whatsNewData = {
       label: 'New Features',
       items: [
         {
+          id: 'mcp-server-tools',
           icon: '🤖',
           iconBg: '#E6F9F1',
           tag: 'feature',
@@ -1359,6 +1425,7 @@ const whatsNewData = {
           sourceUrl: 'https://docs.slack.dev/changelog'
         },
         {
+          id: 'ssh-ftp-domain-approval',
           icon: '🔗',
           iconBg: '#E6F9F1',
           tag: 'feature',
@@ -1375,6 +1442,7 @@ const whatsNewData = {
       label: 'Developer & API',
       items: [
         {
+          id: 'setstatus-scope-migration',
           icon: '🧑‍💻',
           iconBg: '#F5EDF5',
           tag: 'developer',
@@ -1386,6 +1454,7 @@ const whatsNewData = {
           sourceUrl: 'https://docs.slack.dev/changelog'
         },
         {
+          id: 'cli-v4-1-0',
           icon: '📦',
           iconBg: '#F5EDF5',
           tag: 'developer',
@@ -1712,31 +1781,78 @@ function checkAchievements() {
 // ─────────────────────────────────────────────
 //  WHAT'S NEW SCREEN
 // ─────────────────────────────────────────────
+// ── Read state helpers ──
+function getReadItems() {
+  return JSON.parse(localStorage.getItem('newsRead') || '[]');
+}
+function saveReadItems(arr) {
+  localStorage.setItem('newsRead', JSON.stringify(arr));
+}
+function allItemIds() {
+  return whatsNewData.sections.flatMap(s => s.items.map(i => i.id));
+}
+function getUnreadCount() {
+  const read = getReadItems();
+  return allItemIds().filter(id => !read.includes(id)).length;
+}
+function updateUnreadBadge() {
+  const count = getUnreadCount();
+  const badge = document.getElementById('unread-badge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function toggleRead(id) {
+  const read = getReadItems();
+  const idx = read.indexOf(id);
+  if (idx === -1) read.push(id); else read.splice(idx, 1);
+  saveReadItems(read);
+  renderWhatsNew();
+  updateUnreadBadge();
+}
+
+function markAllRead() {
+  saveReadItems(allItemIds());
+  renderWhatsNew();
+  updateUnreadBadge();
+}
+
 function renderWhatsNew() {
   document.getElementById('news-updated-date').textContent = '🔄 Updated ' + whatsNewData.lastUpdated;
+  const read = getReadItems();
 
   const body = document.getElementById('news-body');
   body.innerHTML = whatsNewData.sections.map(section => {
-    const items = section.items.map(item => `
-      <div class="news-card">
-        <div class="news-card-header">
-          <div class="news-tag-icon" style="background:${item.iconBg}">${item.icon}</div>
-          <div class="news-card-meta">
-            <div class="news-pill ${item.tag}">${item.tagLabel}</div>
-            <div class="news-card-title">${item.title}</div>
-            <div class="news-card-date">${item.date}</div>
+    const items = section.items.map(item => {
+      const isRead = read.includes(item.id);
+      return `
+        <div class="news-card ${isRead ? 'is-read' : ''}">
+          <div class="news-card-header">
+            <div class="news-tag-icon" style="background:${item.iconBg}">${item.icon}</div>
+            <div class="news-card-meta">
+              <div class="news-pill ${item.tag}">${item.tagLabel}</div>
+              <div class="news-card-title">${item.title}</div>
+              <div class="news-card-date">${item.date}</div>
+            </div>
+          </div>
+          <div class="news-card-body">${item.summary}</div>
+          <div class="news-card-footer">
+            <a class="news-source-link" href="${item.sourceUrl}" target="_blank" rel="noopener" style="border-top:none">
+              📎 ${item.source} ↗
+            </a>
+            <button class="news-mark-btn ${isRead ? 'marked' : ''}" onclick="toggleRead('${item.id}')">
+              ${isRead ? '✅ Read' : '○ Mark read'}
+            </button>
           </div>
         </div>
-        <div class="news-card-body">${item.summary}</div>
-        <a class="news-source-link" href="${item.sourceUrl}" target="_blank" rel="noopener">
-          📎 ${item.source} ↗
-        </a>
-      </div>
-    `).join('');
-    return `
-      <div class="news-section-label">${section.label}</div>
-      ${items}
-    `;
+      `;
+    }).join('');
+    return `<div class="news-section-label">${section.label}</div>${items}`;
   }).join('');
 }
 
@@ -1788,6 +1904,7 @@ function renderProgress() {
 // ─────────────────────────────────────────────
 renderCategories();
 updateHomeStats();
+updateUnreadBadge();
 </script>
 </body>
 </html>

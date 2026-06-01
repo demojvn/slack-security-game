@@ -770,11 +770,59 @@
       align-items: center;
       gap: 6px;
       padding: 10px 16px;
-      border-top: 1px solid var(--md-outline-variant);
       font-size: 12px;
       font-weight: 600;
       color: var(--md-primary);
       text-decoration: none;
+    }
+    .news-card-footer-md {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--md-outline-variant);
+    }
+    .news-mark-btn-md {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--md-on-surface-variant);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .news-mark-btn-md.marked { color: var(--md-secondary); }
+    .news-card-md.is-read { opacity: 0.45; }
+    .news-card-md.is-read .news-card-title-md {
+      text-decoration: line-through;
+      color: var(--md-on-surface-variant);
+    }
+    .news-unread-badge-md {
+      background: var(--md-error);
+      color: white;
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 2px;
+      display: inline-block;
+    }
+    .news-mark-all-top {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
     }
     .news-updated-chip {
       background: rgba(255,255,255,0.2);
@@ -954,11 +1002,12 @@
 
   <!-- ══ WHAT'S NEW ══ -->
   <div class="screen" id="whats-new">
-    <div class="top-app-bar">
+    <div class="top-app-bar" style="position:relative">
       <div class="top-app-bar-title" style="padding-left:16px">
         <div>What's New</div>
         <div class="top-app-bar-subtitle" id="android-news-date">Updated weekly</div>
       </div>
+      <button class="news-mark-all-top" onclick="markAllReadAndroid()">Mark all read</button>
     </div>
     <div class="news-body-md" id="android-news-body"></div>
   </div>
@@ -977,7 +1026,7 @@
     </div>
     <div class="nav-dest" id="nav-whats-new" onclick="navTo('whats-new')">
       <div class="nav-indicator"></div>
-      <div class="nav-icon">🆕</div>
+      <div class="nav-icon">🆕<span class="news-unread-badge-md" id="android-unread-badge" style="display:none"></span></div>
       <div class="nav-label">What's New</div>
     </div>
     <div class="nav-dest" id="nav-progress" onclick="navTo('progress')">
@@ -1380,52 +1429,89 @@ const whatsNewData = {
     {
       label: 'Security Updates',
       items: [
-        { icon: '🔒', iconBg: '#FFDDE8', tag: 'security', tagLabel: 'Security', title: 'PKCE is now generally available for Slack apps', date: '30 March 2026', summary: 'PKCE eliminates the need to embed a client_secret in public clients, making OAuth flows more secure. Enabling PKCE is a one-way operation — refresh tokens expire after 30 days.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
-        { icon: '🛡️', iconBg: '#FFDDE8', tag: 'security', tagLabel: 'Security', title: 'Desktop app security improvements (v4.48.102)', date: '17 March 2026', summary: 'The latest Slack desktop app includes security improvements. Slack recommends all users update. Three prior February releases also included minor security improvements.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
+        { id: 'pkce-ga', icon: '🔒', iconBg: '#FFDDE8', tag: 'security', tagLabel: 'Security', title: 'PKCE is now generally available for Slack apps', date: '30 March 2026', summary: 'PKCE eliminates the need to embed a client_secret in public clients, making OAuth flows more secure. Enabling PKCE is a one-way operation — refresh tokens expire after 30 days.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { id: 'desktop-4-48-102', icon: '🛡️', iconBg: '#FFDDE8', tag: 'security', tagLabel: 'Security', title: 'Desktop app security improvements (v4.48.102)', date: '17 March 2026', summary: 'The latest Slack desktop app includes security improvements. Slack recommends all users update. Three prior February releases also included minor security improvements.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
       ]
     },
     {
       label: 'Admin & Permissions',
       items: [
-        { icon: '⚙️', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'Optional OAuth scopes give admins finer app control', date: '16 March 2026', summary: 'Workspace admins can now pre-approve which optional OAuth scopes are available when users install apps — allowing an app while restricting specific permissions it can request.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
-        { icon: '🏢', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'Slack for Mac now available in PKG format', date: '22 October 2024', summary: 'Slack for macOS is now available as a PKG installer for enterprise deployment via MDM tools like Jamf or Mosyle, without requiring App Store installation.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' },
-        { icon: '🔑', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'macOS signing certificate company name changed', date: '17 February 2025', summary: 'Slack\'s macOS certificate changed from "SLACK TECHNOLOGIES INC" to "SLACK TECHNOLOGIES, LLC". Admins using certificate-based allowlists should update their policies.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
+        { id: 'optional-oauth-scopes', icon: '⚙️', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'Optional OAuth scopes give admins finer app control', date: '16 March 2026', summary: 'Workspace admins can now pre-approve which optional OAuth scopes are available when users install apps — allowing an app while restricting specific permissions it can request.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { id: 'mac-pkg-format', icon: '🏢', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'Slack for Mac now available in PKG format', date: '22 October 2024', summary: 'Slack for macOS is now available as a PKG installer for enterprise deployment via MDM tools like Jamf or Mosyle, without requiring App Store installation.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' },
+        { id: 'macos-cert-change', icon: '🔑', iconBg: '#D3EAFF', tag: 'admin', tagLabel: 'Admin', title: 'macOS signing certificate company name changed', date: '17 February 2025', summary: 'Slack\'s macOS certificate changed from "SLACK TECHNOLOGIES INC" to "SLACK TECHNOLOGIES, LLC". Admins using certificate-based allowlists should update their policies.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
       ]
     },
     {
       label: 'New Features',
       items: [
-        { icon: '🤖', iconBg: '#C8F5E0', tag: 'feature', tagLabel: 'Feature', title: 'New Slack MCP Server tools expand data access', date: '13 May 2026', summary: 'Five new MCP Server tools added including "Read files" and "List channel members". Enterprise admins should review data-access policies for these expanded capabilities.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
-        { icon: '🔗', iconBg: '#C8F5E0', tag: 'feature', tagLabel: 'Feature', title: 'SSH/FTP/SFTP links now support domain-level approval', date: '20 September 2021', summary: 'Slack now supports approving SSH, FTP, SFTP, and SMB links at the domain level, reducing risk by letting admins whitelist specific trusted servers rather than enabling global access.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
+        { id: 'mcp-server-tools', icon: '🤖', iconBg: '#C8F5E0', tag: 'feature', tagLabel: 'Feature', title: 'New Slack MCP Server tools expand data access', date: '13 May 2026', summary: 'Five new MCP Server tools added including "Read files" and "List channel members". Enterprise admins should review data-access policies for these expanded capabilities.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { id: 'ssh-ftp-domain-approval', icon: '🔗', iconBg: '#C8F5E0', tag: 'feature', tagLabel: 'Feature', title: 'SSH/FTP/SFTP links now support domain-level approval', date: '20 September 2021', summary: 'Slack now supports approving SSH, FTP, SFTP, and SMB links at the domain level, reducing risk by letting admins whitelist specific trusted servers rather than enabling global access.', source: 'Slack Release Notes', sourceUrl: 'https://slack.com/release-notes' }
       ]
     },
     {
       label: 'Developer & API',
       items: [
-        { icon: '🧑‍💻', iconBg: '#EDE0FF', tag: 'developer', tagLabel: 'Developer', title: 'assistant.threads.setStatus scope migration required', date: '5 March 2026', summary: 'The assistant:write scope for setStatus will eventually be removed. Developers should migrate to chat:write promptly to avoid future disruption.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
-        { icon: '📦', iconBg: '#EDE0FF', tag: 'developer', tagLabel: 'Developer', title: 'Slack CLI v4.1.0 adds optional OAuth scope support', date: '19 May 2026', summary: 'CLI v4.1.0 adds support for bot_optional and user_optional OAuth scope fields in the app manifest schema for apps using optional scopes.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' }
+        { id: 'setstatus-scope-migration', icon: '🧑‍💻', iconBg: '#EDE0FF', tag: 'developer', tagLabel: 'Developer', title: 'assistant.threads.setStatus scope migration required', date: '5 March 2026', summary: 'The assistant:write scope for setStatus will eventually be removed. Developers should migrate to chat:write promptly to avoid future disruption.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' },
+        { id: 'cli-v4-1-0', icon: '📦', iconBg: '#EDE0FF', tag: 'developer', tagLabel: 'Developer', title: 'Slack CLI v4.1.0 adds optional OAuth scope support', date: '19 May 2026', summary: 'CLI v4.1.0 adds support for bot_optional and user_optional OAuth scope fields in the app manifest schema for apps using optional scopes.', source: 'Slack Developer Changelog', sourceUrl: 'https://docs.slack.dev/changelog' }
       ]
     }
   ]
 };
 
+function getReadItemsA() { return JSON.parse(localStorage.getItem('newsRead') || '[]'); }
+function saveReadItemsA(arr) { localStorage.setItem('newsRead', JSON.stringify(arr)); }
+function allItemIdsA() { return whatsNewData.sections.flatMap(s => s.items.map(i => i.id)); }
+function getUnreadCountA() {
+  const read = getReadItemsA();
+  return allItemIdsA().filter(id => !read.includes(id)).length;
+}
+function updateUnreadBadgeA() {
+  const count = getUnreadCountA();
+  const badge = document.getElementById('android-unread-badge');
+  if (!badge) return;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline-block' : 'none';
+}
+function toggleReadA(id) {
+  const read = getReadItemsA();
+  const idx = read.indexOf(id);
+  if (idx === -1) read.push(id); else read.splice(idx, 1);
+  saveReadItemsA(read);
+  renderWhatsNewAndroid();
+  updateUnreadBadgeA();
+}
+function markAllReadAndroid() {
+  saveReadItemsA(allItemIdsA());
+  renderWhatsNewAndroid();
+  updateUnreadBadgeA();
+}
+
 function renderWhatsNewAndroid() {
   document.getElementById('android-news-date').textContent = 'Updated ' + whatsNewData.lastUpdated;
+  const read = getReadItemsA();
   const body = document.getElementById('android-news-body');
   body.innerHTML = whatsNewData.sections.map(section => {
-    const items = section.items.map(item => `
-      <div class="news-card-md">
-        <div class="news-card-top">
-          <div class="news-tag-icon-md" style="background:${item.iconBg}">${item.icon}</div>
-          <div class="news-card-info">
-            <div class="news-pill-md ${item.tag}">${item.tagLabel}</div>
-            <div class="news-card-title-md">${item.title}</div>
-            <div class="news-card-date-md">${item.date}</div>
+    const items = section.items.map(item => {
+      const isRead = read.includes(item.id);
+      return `
+        <div class="news-card-md ${isRead ? 'is-read' : ''}">
+          <div class="news-card-top">
+            <div class="news-tag-icon-md" style="background:${item.iconBg}">${item.icon}</div>
+            <div class="news-card-info">
+              <div class="news-pill-md ${item.tag}">${item.tagLabel}</div>
+              <div class="news-card-title-md">${item.title}</div>
+              <div class="news-card-date-md">${item.date}</div>
+            </div>
           </div>
-        </div>
-        <div class="news-card-summary-md">${item.summary}</div>
-        <a class="news-card-link-md" href="${item.sourceUrl}" target="_blank" rel="noopener">📎 ${item.source} ↗</a>
-      </div>`).join('');
+          <div class="news-card-summary-md">${item.summary}</div>
+          <div class="news-card-footer-md">
+            <a class="news-card-link-md" href="${item.sourceUrl}" target="_blank" rel="noopener">📎 ${item.source} ↗</a>
+            <button class="news-mark-btn-md ${isRead ? 'marked' : ''}" onclick="toggleReadA('${item.id}')">
+              ${isRead ? '✅ Read' : '○ Mark read'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
     return `<div class="news-section-label-md">${section.label}</div>${items}`;
   }).join('');
 }
@@ -1433,6 +1519,7 @@ function renderWhatsNewAndroid() {
 // ─── INIT ───────────────────────────────────────
 renderCategories();
 renderHomeSummary();
+updateUnreadBadgeA();
 </script>
 </body>
 </html>
