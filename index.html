@@ -436,6 +436,40 @@
       font-family: 'Space Grotesk', sans-serif;
     }
     .news-mark-all-btn:active { background: rgba(255,255,255,0.15); }
+    .news-refresh-btn {
+      background: rgba(0,245,196,0.1);
+      border: 1px solid rgba(0,245,196,0.25);
+      color: var(--accent);
+      border-radius: 20px; padding: 5px 14px;
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex; align-items: center; gap: 5px;
+      transition: background 0.2s;
+    }
+    .news-refresh-btn:active { background: rgba(0,245,196,0.2); }
+    .news-refresh-btn.spinning .refresh-icon { display: inline-block; animation: spin 0.7s linear; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .news-toast {
+      position: fixed;
+      bottom: calc(var(--nav-height, 72px) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      max-width: 340px; width: calc(100% - 36px);
+      background: rgba(20,0,28,0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0,245,196,0.3);
+      border-radius: 16px; padding: 14px 18px;
+      font-size: 14px; color: white; line-height: 1.4;
+      text-align: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 200;
+      box-shadow: 0 0 30px rgba(0,245,196,0.15), 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .news-toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    .news-toast .toast-emoji { font-size: 22px; display: block; margin-bottom: 6px; }
 
     /* ── Bottom Nav ── */
     .bottom-nav {
@@ -587,11 +621,17 @@
       <p>Latest Slack security &amp; admin updates</p>
       <div class="news-header-row">
         <div class="news-updated" id="news-updated-date">🔄 Updated weekly</div>
-        <button class="news-mark-all-btn" onclick="markAllRead()">Mark all read</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="news-refresh-btn" id="refresh-btn" onclick="refreshWhatsNew()">
+            <span class="refresh-icon">↻</span> Refresh
+          </button>
+          <button class="news-mark-all-btn" onclick="markAllRead()">Mark all read</button>
+        </div>
       </div>
     </div>
     <div class="news-body" id="news-body"></div>
   </div>
+  <div class="news-toast" id="news-toast"></div>
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
@@ -1610,6 +1650,54 @@ function markAllRead() {
   saveReadItems(allItemIds());
   renderWhatsNew();
   updateUnreadBadge();
+}
+
+const noNewsMessages = [
+  { emoji: '🦗', text: 'Crickets. Slack is being suspiciously quiet this week.' },
+  { emoji: '🕳️', text: 'You found the void. Nothing new lives here.' },
+  { emoji: '😴', text: 'Slack devs are asleep. Check back when they wake up.' },
+  { emoji: '🌵', text: 'Dry as a desert. No updates in sight.' },
+  { emoji: '👀', text: 'Slack said "we cooked" and then cooked nothing.' },
+  { emoji: '🫙', text: 'The update jar is empty. Someone ate them all.' },
+  { emoji: '🐢', text: 'Updates are coming… at turtle speed.' },
+  { emoji: '📡', text: 'Signal lost. Slack HQ is not transmitting.' },
+  { emoji: '🧊', text: 'Cold. Ice cold. No new updates detected.' },
+  { emoji: '🔮', text: 'The crystal ball says… check back next week, bestie.' },
+  { emoji: '🫠', text: 'Everything is melting but there\'s still nothing new.' },
+  { emoji: '💤', text: 'Slack updates: not in this economy.' },
+  { emoji: '🕵️', text: 'Looked everywhere. Checked under the sofa. Nothing.' },
+  { emoji: '🤌', text: 'No updates. We\'re just vibing.' },
+  { emoji: '🪤', text: 'You refreshed and all you caught was this message.' },
+];
+
+let _lastNoNewsIdx = -1;
+
+function refreshWhatsNew() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  btn.disabled = true;
+
+  setTimeout(() => {
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+
+    // Pick a random easter egg that isn't the same as last time
+    let idx;
+    do { idx = Math.floor(Math.random() * noNewsMessages.length); }
+    while (idx === _lastNoNewsIdx);
+    _lastNoNewsIdx = idx;
+
+    const msg = noNewsMessages[idx];
+    showToast(`<span class="toast-emoji">${msg.emoji}</span>${msg.text}`);
+  }, 700);
+}
+
+function showToast(html) {
+  const toast = document.getElementById('news-toast');
+  toast.innerHTML = html;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('show'), 3200);
 }
 
 function renderWhatsNew() {
